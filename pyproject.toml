@@ -55,6 +55,15 @@ llm_brain = ["py.typed", "core/schema.sql"]
 target-version = "py39"  # Match requires-python
 line-length = 100
 indent-width = 4
+exclude = [
+    ".git",
+    ".github",
+    ".kimi",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+]
 
 [tool.ruff.lint]
 # Enable all strict rule categories
@@ -117,6 +126,11 @@ known-first-party = ["llm_brain"]
 [tool.mypy]
 python_version = "3.9"
 strict = true
+exclude = [
+    ".kimi",
+    "tests",
+    "scripts",
+]
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true

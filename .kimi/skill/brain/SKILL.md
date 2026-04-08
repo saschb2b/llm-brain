@@ -21,3 +21,4 @@ python3 -c "import os,sqlite3;os.makedirs(os.path.expanduser('~/.kimi-brain'),ex
 import os,sqlite3,uuid,time,numpy as np
 conn=sqlite3.connect(os.path.expanduser('~/.kimi-brain/core.db'))
 memories=conn.execute("SELECT raw_text,importance FROM memories WHERE tier='working' ORDER BY importance DESC LIMIT 5").fetchall()
+
