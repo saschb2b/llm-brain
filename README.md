@@ -37,8 +37,54 @@ Current knowledge management (Obsidian/markdown) forces LLMs to parse human-opti
 - **Vector Search**: Fast similarity search with sqlite-vec
 - **Importance Scoring**: LLM-assigned importance with time decay
 - **Strategic Forgetting**: LRU eviction and memory consolidation
+- **Kimi Skill**: Auto-detect and use via Kimi CLI skills system
+
+## Kimi Skill Usage
+
+The brain is available as a **Kimi Skill** for automatic usage:
+
+**Location**: `~/.kimi/skill/brain/SKILL.md`
+
+**Auto-triggers** when you say:
+- "Use my brain"
+- "Remember this..."
+- "Recall..."
+- "What did we discuss about..."
+
+**What happens automatically:**
+1. Check if `~/.kimi-brain/core.db` exists
+2. Bootstrap schema if missing
+3. Recall top 5 working memories by importance
+4. Include them in session context
+5. Store new insights during the session
+
+**Example session:**
+```
+You: Use my brain and help me with combat design
+Kimi: [Loads 5 relevant memories from previous sessions]
+      I see you previously preferred Dark Souls style combat...
+      Let's build on that.
+```
 
 ## Installation
+
+### For Kimi CLI Users (Skill)
+
+The skill is automatically discovered from `~/.kimi/skill/brain/`:
+
+```bash
+# Clone to skill directory
+git clone https://github.com/saschametz/llm-brain.git
+cp -r llm-brain/.kimi/skill/brain ~/.kimi/skill/
+
+# Or symlink for development
+ln -s $(pwd)/llm-brain/.kimi/skill/brain ~/.kimi/skill/brain
+```
+
+Then use naturally in any Kimi session:
+> "Use my brain and recall what we said about..."
+
+### For Python Development
 
 ```bash
 # Clone the repository
@@ -54,7 +100,25 @@ pip install sqlite-vec kuzu numpy pydantic pyarrow
 
 ## Quick Start
 
-### Bootstrap
+### Option 1: Kimi Skill (Recommended)
+
+For **Kimi CLI** users, the brain works automatically via skills:
+
+```bash
+# Install the brain skill (one-time)
+# The skill at ~/.kimi/skill/brain/ is auto-detected by Kimi CLI
+```
+
+Then in any session, just say:
+> "Use my brain" or "Remember this..."
+
+The LLM will:
+1. Auto-detect `~/.kimi-brain/core.db`
+2. Bootstrap if missing
+3. Load working memories into context
+4. Store new insights automatically
+
+### Option 2: Python Package
 
 ```python
 from llm_brain import Brain
