@@ -91,12 +91,23 @@ Then use naturally in any Kimi session:
 git clone https://github.com/saschametz/llm-brain.git
 cd llm-brain
 
-# Install in development mode
-pip install -e ".[dev]"
+# Basic install (core functionality only)
+pip install -e .
 
-# Or install dependencies only
-pip install sqlite-vec kuzu numpy pydantic pyarrow
+# With all optional features
+pip install -e ".[all]"
+
+# With specific features
+pip install -e ".[graph]"    # KùzuDB graph database (requires C++ compiler on Windows)
+pip install -e ".[vec]"      # sqlite-vec for fast vector search
+pip install -e ".[web]"      # Web dashboard
+
+# Development install
+pip install -e ".[dev]"
 ```
+
+**Note on Windows**: The `kuzu` graph database requires C++ build tools on Windows. 
+If you get build errors, install without graph support: `pip install -e ".[vec,web]"`
 
 ## Quick Start
 
