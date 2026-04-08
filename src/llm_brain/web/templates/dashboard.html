@@ -143,6 +143,11 @@
                 color: #e94560;
             }
 
+            .health-item.optional {
+                border: 1px solid #666;
+                color: #888;
+            }
+
             .tier-bar {
                 display: flex;
                 height: 40px;
@@ -549,11 +554,18 @@
                 document.getElementById("db-size").textContent =
                     data.db_size_mb.toFixed(2);
 
-                // Graph nodes - show count or 'disabled' if not available
+                // Graph nodes - show count + implementation type
                 const graphStats = data.stats.graph || {};
-                const graphDisplay = graphStats.available
-                    ? `${graphStats.nodes} nodes`
-                    : '<span style="color:#666">Not installed</span>';
+                let graphDisplay =
+                    '<span style="color:#666">Not available</span>';
+                if (graphStats.available) {
+                    const impl = graphStats.implementation
+                        ? `[${graphStats.implementation}]`
+                        : "";
+                    const nodes = graphStats.nodes || 0;
+                    const edges = graphStats.edges || 0;
+                    graphDisplay = `${impl} ${nodes} nodes, ${edges} edges`;
+                }
                 document.getElementById("graph-nodes").innerHTML = graphDisplay;
 
                 // Health status - better indicators for optional components
