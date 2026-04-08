@@ -26,22 +26,27 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 # Templates
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
-# Global brain instance (set on startup)
-_brain: Brain | None = None
+# Brain configuration (set on startup)
+_brain_path: str | None = None
+_brain_dimensions: int = 128
 
 
 def set_brain(brain: Brain) -> None:
-    """Set the brain instance for the dashboard."""
-    global _brain  # noqa: PLW0603
-    _brain = brain
+    """Set the brain configuration for the dashboard."""
+    global _brain_path, _brain_dimensions  # noqa: PLW0603
+    _brain_path = str(brain.config.brain_path)
+    _brain_dimensions = brain.config.vector_dimensions
 
 
 def get_brain() -> Brain:
-    """Get the brain instance, creating default if needed."""
-    global _brain  # noqa: PLW0603
-    if _brain is None:
-        _brain = Brain()
-    return _brain
+    """Get a fresh brain instance (new DB connection per request).
+
+    This prevents the dashboard from holding long-lived locks
+    that block other processes.
+    """
+    if _brain_path:
+        return Brain(brain_path=_brain_path, vector_dimensions=_brain_dimensions)
+    return Brain(vector_dimensions=_brain_dimensions)
 
 
 @app.get("/", response_class=HTMLResponse)
