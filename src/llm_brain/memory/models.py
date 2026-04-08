@@ -1,6 +1,7 @@
 """Data models for memories and related entities."""
 
 import uuid
+from contextlib import suppress
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Optional
@@ -134,7 +135,7 @@ class Memory(BaseModel):
         Returns:
             Dictionary suitable for SQLite insertion
         """
-        import json
+        import json  # noqa: PLC0415
 
         vector_blob: Optional[bytes] = None
         if self.embedding is not None:
@@ -185,7 +186,7 @@ class Memory(BaseModel):
         Returns:
             Memory instance
         """
-        import json
+        import json  # noqa: PLC0415
 
         # Parse embedding
         embedding: Optional[Embedding] = None
@@ -198,10 +199,8 @@ class Memory(BaseModel):
         # Parse metadata
         meta_dict: dict[str, Any] = {}
         if row["metadata"]:
-            try:
+            with suppress(json.JSONDecodeError):
                 meta_dict = json.loads(row["metadata"])
-            except json.JSONDecodeError:
-                pass
 
         # Parse token map
         source_tokens: Optional[list[int]] = None

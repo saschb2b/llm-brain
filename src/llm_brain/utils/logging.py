@@ -53,7 +53,7 @@ class CognitionLogger:
             "metadata": metadata or {},
         }
 
-        with open(self.config.log_path, "a") as f:
+        with self.config.log_path.open("a") as f:
             f.write(json.dumps(entry) + "\n")
 
     def read_logs(
@@ -73,9 +73,9 @@ class CognitionLogger:
 
         entries: list[dict[str, Any]] = []
 
-        with open(self.config.log_path) as f:
-            for line in f:
-                line = line.strip()
+        with self.config.log_path.open() as f:
+            for raw_line in f:
+                line = raw_line.strip()
                 if not line:
                     continue
                 try:

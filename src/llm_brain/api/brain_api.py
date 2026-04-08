@@ -213,11 +213,7 @@ class Brain:
             >>> results = brain.recall(query_vector=query, top_k=5)
         """
         # Convert tier string to enum
-        tier_enum: Optional[MemoryTier] = None
-        if isinstance(tier, str):
-            tier_enum = MemoryTier(tier)
-        else:
-            tier_enum = tier  # Already MemoryTier or None
+        tier_enum = MemoryTier(tier) if isinstance(tier, str) else tier
 
         # By ID
         if memory_id:

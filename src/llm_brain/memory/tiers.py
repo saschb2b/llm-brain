@@ -92,9 +92,11 @@ class TierManager:
         )
 
         for memory in working_memories:
-            if memory.metadata.importance_score >= self.config.importance_threshold:
-                if self.promote(memory.memory_id):
-                    promoted += 1
+            if (
+                memory.metadata.importance_score >= self.config.importance_threshold
+                and self.promote(memory.memory_id)
+            ):
+                promoted += 1
 
         # Promote high-importance episodic memories to semantic
         episodic_memories = self.storage.recall_by_importance(
@@ -102,9 +104,11 @@ class TierManager:
         )
 
         for memory in episodic_memories:
-            if memory.metadata.importance_score >= self.config.importance_threshold:
-                if self.promote(memory.memory_id):
-                    promoted += 1
+            if (
+                memory.metadata.importance_score >= self.config.importance_threshold
+                and self.promote(memory.memory_id)
+            ):
+                promoted += 1
 
         return promoted
 

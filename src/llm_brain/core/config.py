@@ -71,7 +71,7 @@ def get_config(
     Returns:
         BrainConfig instance
     """
-    global _config
+    global _config  # noqa: PLW0603
 
     if _config is None:
         # Check environment variables
@@ -95,5 +95,5 @@ def get_config(
 
 def reset_config() -> None:
     """Reset global configuration (useful for testing)."""
-    global _config
+    global _config  # noqa: PLW0603
     _config = None

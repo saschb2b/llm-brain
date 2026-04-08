@@ -2,6 +2,7 @@
 
 import json
 import time
+from contextlib import suppress
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -47,8 +48,10 @@ class MemoryStorage:
         columns = ", ".join(data.keys())
         placeholders = ", ".join(["?"] * len(data))
 
+        # Safe: columns are from data.keys(), placeholders are ? params
         self.db.execute(
-            f"INSERT INTO memories ({columns}) VALUES ({placeholders})", tuple(data.values())
+            f"INSERT INTO memories ({columns}) VALUES ({placeholders})",  # noqa: S608
+            tuple(data.values()),
         )
 
         # Insert into vector table if sqlite-vec is available
@@ -77,7 +80,7 @@ class MemoryStorage:
                 "INSERT INTO vec_memories (memory_id, embedding) VALUES (?, ?)",
                 (memory.memory_id, vector_json),
             )
-        except Exception:
+        except Exception:  # noqa: S110 - sqlite-vec is optional
             # sqlite-vec might not be available or table not created
             pass
 
@@ -152,7 +155,7 @@ class MemoryStorage:
 
     def _load_relations(self, memory_id: str) -> list[Any]:
         """Load relations for a memory."""
-        from llm_brain.memory.models import Relation
+        from llm_brain.memory.models import Relation  # noqa: PLC0415
 
         cursor = self.db.execute("SELECT * FROM relations WHERE source_id = ?", (memory_id,))
 
@@ -192,7 +195,7 @@ class MemoryStorage:
         return results
 
     def _search_vec_table(
-        self, query_vector: np.ndarray, top_k: int, tier: Optional[MemoryTier]
+        self, _query_vector: np.ndarray, top_k: int, tier: Optional[MemoryTier]
     ) -> list[tuple[Memory, float]]:
         """Search using sqlite-vec virtual table."""
         results: list[tuple[Memory, float]] = []
@@ -204,8 +207,6 @@ class MemoryStorage:
             )
             if not cursor.fetchone():
                 return []
-
-            vector_json = json.dumps(query_vector.tolist())
 
             if tier:
                 # Join with memories table to filter by tier
@@ -238,7 +239,7 @@ class MemoryStorage:
                 similarity = 1.0 / (1.0 + row["distance"])
                 results.append((memory, similarity))
 
-        except Exception:
+        except Exception:  # noqa: S110 - sqlite-vec is optional
             pass
 
         return results
@@ -247,7 +248,7 @@ class MemoryStorage:
         self, query_vector: np.ndarray, top_k: int, tier: Optional[MemoryTier]
     ) -> list[tuple[Memory, float]]:
         """Brute force cosine similarity search."""
-        from llm_brain.core.database import blob_to_vector
+        from llm_brain.core.database import blob_to_vector  # noqa: PLC0415
 
         query_norm = query_vector / (np.linalg.norm(query_vector) + 1e-8)
 
@@ -336,10 +337,8 @@ class MemoryStorage:
             True if deleted, False if not found
         """
         # Delete from vector table first
-        try:
+        with suppress(Exception):
             self.db.execute("DELETE FROM vec_memories WHERE memory_id = ?", (memory_id,))
-        except Exception:
-            pass
 
         # Delete relations
         self.db.execute(
@@ -366,12 +365,13 @@ class MemoryStorage:
             now = int(datetime.now(timezone.utc).timestamp())
             self.db.execute(
                 """
-                INSERT INTO cognition_log (timestamp, operation, memory_id, context_query, latency_ms)
+                INSERT INTO cognition_log (
+                    timestamp, operation, memory_id, context_query, latency_ms
+                )
                 VALUES (?, ?, ?, ?, ?)
                 """,
                 (now, operation, memory_id, context, latency_ms),
             )
             self.db.commit()
-        except Exception:
-            # Don't fail on logging errors
+        except Exception:  # noqa: S110 - Don't fail on logging errors
             pass

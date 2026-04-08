@@ -1,5 +1,7 @@
 """KùzuDB graph database integration for memory relations."""
 
+import time
+from contextlib import suppress
 from typing import Any, Optional
 
 try:
@@ -52,7 +54,7 @@ class KuzuGraph:
             return
 
         # Create Memory node table
-        try:
+        with suppress(Exception):
             self._conn.execute("""
                 CREATE NODE TABLE IF NOT EXISTS Memory(
                     id STRING,
@@ -62,11 +64,9 @@ class KuzuGraph:
                     PRIMARY KEY (id)
                 )
             """)
-        except Exception:
-            pass  # Table might already exist
 
         # Create RELATES_TO relationship table
-        try:
+        with suppress(Exception):
             self._conn.execute("""
                 CREATE REL TABLE IF NOT EXISTS RELATES_TO(
                     FROM Memory TO Memory,
@@ -75,8 +75,6 @@ class KuzuGraph:
                     created_at INT64
                 )
             """)
-        except Exception:
-            pass
 
     def add_memory_node(self, memory_id: str, tier: str, importance: float) -> bool:
         """Add a memory node to the graph.
@@ -93,12 +91,11 @@ class KuzuGraph:
             return False
 
         try:
-            import time
-
             created_at = int(time.time())
 
             self._conn.execute(
-                "CREATE (m:Memory {id: $id, tier: $tier, importance: $importance, created_at: $created_at})",
+                "CREATE (m:Memory {id: $id, tier: $tier, importance: $importance, "
+                "created_at: $created_at})",
                 {"id": memory_id, "tier": tier, "importance": importance, "created_at": created_at},
             )
             return True
@@ -123,14 +120,13 @@ class KuzuGraph:
             return False
 
         try:
-            import time
-
             created_at = int(time.time())
 
             self._conn.execute(
                 """
                 MATCH (m1:Memory {id: $source_id}), (m2:Memory {id: $target_id})
-                CREATE (m1)-[:RELATES_TO {relation_type: $type, weight: $weight, created_at: $created_at}]->(m2)
+                CREATE (m1)-[:RELATES_TO {relation_type: $type, weight: $weight, \
+                    created_at: $created_at}]->(m2)
                 """,
                 {
                     "source_id": source_id,
@@ -164,7 +160,8 @@ class KuzuGraph:
             if relation_type:
                 result = self._conn.execute(
                     """
-                    MATCH (m:Memory {id: $id})-[:RELATES_TO {relation_type: $type}]->(related:Memory)
+                    MATCH (m:Memory {id: $id})-[:RELATES_TO {relation_type: $type}]->(
+                        related:Memory)
                     WHERE r.weight >= $min_weight
                     RETURN related.id as id, related.tier as tier,
                            related.importance as importance, r.weight as weight
@@ -206,7 +203,8 @@ class KuzuGraph:
         try:
             if relation_type:
                 query = f"""
-                    MATCH (m:Memory {{id: $id}})-[:RELATES_TO*1..{hops} {{relation_type: $type}}]->(related:Memory)
+                    MATCH (m:Memory {{id: $id}})-[:RELATES_TO*1..{hops} {{
+                        relation_type: $type}}]->(related:Memory)
                     RETURN DISTINCT related.id as id, related.tier as tier,
                            related.importance as importance, length(p) as hops
                 """
@@ -240,7 +238,8 @@ class KuzuGraph:
         try:
             result = self._conn.execute(
                 f"""
-                MATCH p = (m1:Memory {{id: $source_id}})-[:RELATES_TO*1..{max_length}]->(m2:Memory {{id: $target_id}})
+                MATCH p = (m1:Memory {{id: $source_id}})-[:RELATES_TO*1..{max_length}]->(
+                    m2:Memory {{id: $target_id}})
                 RETURN [node in nodes(p) | node.id] as path
                 LIMIT 10
                 """,
@@ -308,7 +307,7 @@ def get_graph(config: Optional[BrainConfig] = None) -> KuzuGraph:
     Returns:
         KuzuGraph instance
     """
-    global _graph
+    global _graph  # noqa: PLW0603
     if _graph is None:
         _graph = KuzuGraph(config)
     return _graph
@@ -316,5 +315,5 @@ def get_graph(config: Optional[BrainConfig] = None) -> KuzuGraph:
 
 def reset_graph() -> None:
     """Reset global graph instance."""
-    global _graph
+    global _graph  # noqa: PLW0603
     _graph = None

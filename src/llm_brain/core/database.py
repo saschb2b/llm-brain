@@ -55,19 +55,19 @@ class Database:
         if self._vec_loaded:
             return True
 
-        try:
-            # Try to import sqlite_vec Python package
-            spec = importlib.util.find_spec("sqlite_vec")
-            if spec is not None:
-                import sqlite_vec
+        # Try to import sqlite_vec Python package
+        spec = importlib.util.find_spec("sqlite_vec")
+        if spec is not None:
+            try:
+                import sqlite_vec  # noqa: PLC0415
 
                 conn.enable_load_extension(True)
                 sqlite_vec.load(conn)
                 conn.enable_load_extension(False)
                 self._vec_loaded = True
                 return True
-        except Exception:
-            pass
+            except Exception:  # noqa: S110 - sqlite-vec is optional
+                pass
 
         # Fallback: try loading from common paths
         vec_paths = [
@@ -84,7 +84,7 @@ class Database:
                 conn.enable_load_extension(False)
                 self._vec_loaded = True
                 return True
-            except sqlite3.OperationalError:
+            except sqlite3.OperationalError:  # noqa: PERF203
                 continue
 
         return False
@@ -92,7 +92,7 @@ class Database:
     def initialize_schema(self) -> None:
         """Initialize database schema from SQL file."""
         schema_path = Path(__file__).parent / "schema.sql"
-        with open(schema_path) as f:
+        with schema_path.open() as f:
             schema = f.read()
 
         self.connection.executescript(schema)
@@ -196,7 +196,7 @@ def get_database(config: Optional[BrainConfig] = None) -> Database:
     Returns:
         Database instance
     """
-    global _db
+    global _db  # noqa: PLW0603
     if _db is None:
         _db = Database(config)
     return _db
@@ -204,7 +204,7 @@ def get_database(config: Optional[BrainConfig] = None) -> Database:
 
 def reset_database() -> None:
     """Reset global database instance (useful for testing)."""
-    global _db
+    global _db  # noqa: PLW0603
     if _db:
         _db.close()
     _db = None
