@@ -89,7 +89,7 @@ class KuzuGraph:
         Returns:
             True if added successfully
         """
-        if not self.is_available:
+        if not self.is_available or self._conn is None:
             return False
 
         try:
@@ -119,7 +119,7 @@ class KuzuGraph:
         Returns:
             True if added successfully
         """
-        if not self.is_available:
+        if not self.is_available or self._conn is None:
             return False
 
         try:
@@ -157,7 +157,7 @@ class KuzuGraph:
         Returns:
             List of related memories with relation info
         """
-        if not self.is_available:
+        if not self.is_available or self._conn is None:
             return []
 
         try:
@@ -200,7 +200,7 @@ class KuzuGraph:
         Returns:
             List of reachable memories
         """
-        if not self.is_available:
+        if not self.is_available or self._conn is None:
             return []
 
         try:
@@ -234,7 +234,7 @@ class KuzuGraph:
         Returns:
             List of paths (each path is a list of memory IDs)
         """
-        if not self.is_available:
+        if not self.is_available or self._conn is None:
             return []
 
         try:
@@ -260,7 +260,7 @@ class KuzuGraph:
         Returns:
             True if deleted
         """
-        if not self.is_available:
+        if not self.is_available or self._conn is None:
             return False
 
         try:
@@ -275,7 +275,7 @@ class KuzuGraph:
         Returns:
             Dictionary with node and edge counts
         """
-        if not self.is_available:
+        if not self.is_available or self._conn is None:
             return {"available": False}
 
         try:

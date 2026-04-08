@@ -38,13 +38,14 @@ class Embedding(BaseModel):
 
     @field_validator("vector")
     @classmethod
-    def validate_vector(cls, v: np.ndarray) -> np.ndarray:
+    def validate_vector(cls, v: Any) -> np.ndarray:
         """Ensure vector is 1D numpy array."""
         if not isinstance(v, np.ndarray):
             v = np.array(v, dtype=np.float32)
         if v.ndim != 1:
             v = v.flatten()
-        return v.astype(np.float32)
+        result: np.ndarray = v.astype(np.float32)
+        return result
 
     @field_validator("dimensions")
     @classmethod
@@ -89,7 +90,7 @@ class MemoryMetadata(BaseModel):
         Returns:
             Decay-adjusted importance score
         """
-        decay = np.exp(-self.decay_rate * days_since_access)
+        decay: float = float(np.exp(-self.decay_rate * days_since_access))
         return self.importance_score * decay
 
 

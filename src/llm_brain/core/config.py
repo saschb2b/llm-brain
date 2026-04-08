@@ -3,7 +3,7 @@
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional, Union
 
 
 @dataclass
@@ -20,7 +20,7 @@ class BrainConfig:
         importance_threshold: Threshold for auto-promotion to semantic
     """
 
-    brain_path: Path = field(default_factory=lambda: Path.home() / ".kimi-brain")
+    brain_path: Union[Path, str] = field(default_factory=lambda: Path.home() / ".kimi-brain")
     db_name: str = "core.db"
     vector_dimensions: int = 3072
     default_embedding_model: str = "text-embedding-3-large"
@@ -37,21 +37,21 @@ class BrainConfig:
     @property
     def db_path(self) -> Path:
         """Get full path to SQLite database."""
-        return self.brain_path / self.db_name
+        return self.brain_path / self.db_name  # type: ignore[operator]
 
     @property
     def kuzu_path(self) -> Path:
         """Get path to KùzuDB graph database."""
-        return self.brain_path / "graph.kuzu"
+        return self.brain_path / "graph.kuzu"  # type: ignore[operator]
 
     @property
     def log_path(self) -> Path:
         """Get path to cognition log."""
-        return self.brain_path / "cognition.jsonl"
+        return self.brain_path / "cognition.jsonl"  # type: ignore[operator]
 
     def ensure_directories(self) -> None:
         """Create brain directory structure if not exists."""
-        self.brain_path.mkdir(parents=True, exist_ok=True)
+        self.brain_path.mkdir(parents=True, exist_ok=True)  # type: ignore[union-attr]
 
 
 # Global config instance
@@ -81,7 +81,7 @@ def get_config(
         path = brain_path or env_path
         dims = vector_dimensions or (int(env_dims) if env_dims else None)
 
-        kwargs: dict[str, object] = {}
+        kwargs: dict[str, Any] = {}
         if path:
             kwargs["brain_path"] = Path(path)
         if dims:

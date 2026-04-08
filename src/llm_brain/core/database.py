@@ -33,7 +33,7 @@ class Database:
     def _connect(self) -> sqlite3.Connection:
         """Create and configure SQLite connection."""
         # Ensure directory exists
-        self.config.brain_path.mkdir(parents=True, exist_ok=True)
+        self.config.brain_path.mkdir(parents=True, exist_ok=True)  # type: ignore[union-attr]
 
         conn = sqlite3.connect(str(self.config.db_path), check_same_thread=False)
         conn.row_factory = sqlite3.Row
@@ -232,4 +232,5 @@ def blob_to_vector(blob: bytes, dimensions: int) -> np.ndarray:
     Returns:
         Numpy array of float32 (for computation)
     """
-    return np.frombuffer(blob, dtype=np.float16, count=dimensions).astype(np.float32)
+    result: np.ndarray = np.frombuffer(blob, dtype=np.float16, count=dimensions).astype(np.float32)
+    return result

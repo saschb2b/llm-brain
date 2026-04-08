@@ -1,13 +1,15 @@
 """Content hashing utilities for deduplication."""
 
 import hashlib
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 
 
 def content_hash(
-    text: Optional[str] = None, vector: Optional[np.ndarray] = None, metadata: Optional[dict] = None
+    text: Optional[str] = None,
+    vector: Optional[np.ndarray] = None,
+    metadata: Optional[dict[str, Any]] = None,
 ) -> str:
     """Generate SHA-256 hash for memory content.
 
@@ -29,7 +31,7 @@ def content_hash(
 
     if vector is not None:
         # Quantize vector for fuzzy matching
-        quantized = (vector * 1000).astype(np.int16)
+        quantized: np.ndarray = (vector * 1000).astype(np.int16)
         hasher.update(quantized.tobytes())
 
     if metadata:

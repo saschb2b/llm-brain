@@ -216,8 +216,8 @@ class Brain:
         tier_enum: Optional[MemoryTier] = None
         if isinstance(tier, str):
             tier_enum = MemoryTier(tier)
-        elif tier is not None:
-            tier_enum = tier
+        else:
+            tier_enum = tier  # Already MemoryTier or None
 
         # By ID
         if memory_id:
