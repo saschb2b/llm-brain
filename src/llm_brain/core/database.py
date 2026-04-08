@@ -35,8 +35,15 @@ class Database:
         # Ensure directory exists
         self.config.brain_path.mkdir(parents=True, exist_ok=True)  # type: ignore[union-attr]
 
-        conn = sqlite3.connect(str(self.config.db_path), check_same_thread=False)
+        conn = sqlite3.connect(
+            str(self.config.db_path),
+            check_same_thread=False,
+            timeout=30.0,  # Wait up to 30s for locks
+        )
         conn.row_factory = sqlite3.Row
+
+        # Enable WAL mode for concurrent reads/writes
+        conn.execute("PRAGMA journal_mode = WAL")
 
         # Enable foreign keys
         conn.execute("PRAGMA foreign_keys = ON")
