@@ -117,6 +117,10 @@ pytest
 ruff check src/
 ```
 
+## Research
+
+This project started as a self-experiment after reading about [Google's Titans architecture](https://research.google/blog/titans-miras-helping-ai-have-long-term-memory/). See **[RESEARCH.md](RESEARCH.md)** for a deep dive into the state of LLM memory research — what exists, what gaps remain, and where this project fits in.
+
 ## Status
 
 Research infrastructure. The brain works, the hooks work, the dashboard works. The embedding is currently hash-based (deterministic but not semantic) — real embedding models are the next step.
