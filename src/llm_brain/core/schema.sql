@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS memories (
     created_at INTEGER NOT NULL,  -- Unix timestamp
     accessed_at INTEGER NOT NULL, -- Unix timestamp
     vector BLOB,                  -- Float16 array (raw bytes)
-    content_hash TEXT UNIQUE,     -- For deduplication
+    content_hash TEXT,            -- For deduplication
     importance REAL DEFAULT 0.5,  -- 0.0-1.0, LLM-assigned
     confidence REAL DEFAULT 0.5,  -- 0.0-1.0, certainty of fact
     compression_ratio REAL DEFAULT 1.0,  -- 1.0 = no compression
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS cognition_log (
     context_query TEXT,           -- What was being searched for
     latency_ms INTEGER,
     metadata JSON,
-    FOREIGN KEY (memory_id) REFERENCES memories(id)
+    FOREIGN KEY (memory_id) REFERENCES memories(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_cognition_log_timestamp ON cognition_log(timestamp);

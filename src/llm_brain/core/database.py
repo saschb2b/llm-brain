@@ -60,6 +60,7 @@ class Database:
             spec = importlib.util.find_spec("sqlite_vec")
             if spec is not None:
                 import sqlite_vec
+
                 conn.enable_load_extension(True)
                 sqlite_vec.load(conn)
                 conn.enable_load_extension(False)
@@ -91,7 +92,7 @@ class Database:
     def initialize_schema(self) -> None:
         """Initialize database schema from SQL file."""
         schema_path = Path(__file__).parent / "schema.sql"
-        with open(schema_path, "r") as f:
+        with open(schema_path) as f:
             schema = f.read()
 
         self.connection.executescript(schema)
@@ -118,17 +119,13 @@ class Database:
                     memory_id TEXT PRIMARY KEY,
                     embedding FLOAT[{dims}]
                 )
-            "")
+            """)
             self.connection.commit()
         except sqlite3.OperationalError as e:
             # sqlite-vec might not be available or have different syntax
             print(f"Warning: Could not create vector table: {e}")
 
-    def execute(
-        self,
-        query: str,
-        parameters: Optional[tuple[Any, ...]] = None
-    ) -> sqlite3.Cursor:
+    def execute(self, query: str, parameters: Optional[tuple[Any, ...]] = None) -> sqlite3.Cursor:
         """Execute SQL query.
 
         Args:
@@ -142,11 +139,7 @@ class Database:
             return self.connection.execute(query, parameters)
         return self.connection.execute(query)
 
-    def executemany(
-        self,
-        query: str,
-        parameters: list[tuple[Any, ...]]
-    ) -> sqlite3.Cursor:
+    def executemany(self, query: str, parameters: list[tuple[Any, ...]]) -> sqlite3.Cursor:
         """Execute SQL query with multiple parameter sets.
 
         Args:

@@ -1,16 +1,13 @@
 """Basic functionality tests."""
 
 import tempfile
-from pathlib import Path
 
 import numpy as np
 import pytest
 
-from llm_brain import Brain, Memory, MemoryTier
+from llm_brain import Brain, MemoryTier
 from llm_brain.core.config import reset_config
 from llm_brain.core.database import reset_database
-from llm_brain.memory.models import Embedding, MemoryMetadata
-from llm_brain.memory.storage import MemoryStorage
 
 
 @pytest.fixture

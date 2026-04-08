@@ -1,7 +1,7 @@
 """Content hashing utilities for deduplication."""
 
 import hashlib
-from typing import Optional, Union
+from typing import Optional
 
 import numpy as np
 
@@ -35,7 +35,7 @@ def content_hash(
     if metadata:
         # Sort keys for consistent hashing
         for key in sorted(metadata.keys()):
-            hasher.update(f"{key}:{metadata[key]}".encode("utf-8"))
+            hasher.update(f"{key}:{metadata[key]}".encode())
 
     return hasher.hexdigest()
 

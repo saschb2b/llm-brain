@@ -222,7 +222,7 @@ class Memory(BaseModel):
             content_hash=row["content_hash"],
             raw_text=row["raw_text"],
             source_tokens=source_tokens,
-            context_window_id=context_window_id or row.get("context_window_id"),
+            context_window_id=context_window_id or row["context_window_id"],
             metadata=MemoryMetadata(
                 importance_score=row["importance"],
                 confidence=row["confidence"],

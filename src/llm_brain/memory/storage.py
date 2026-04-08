@@ -3,7 +3,6 @@
 import json
 import time
 from datetime import datetime, timezone
-from sqlite3 import IntegrityError
 from typing import Any, Optional
 
 import numpy as np
@@ -346,6 +345,9 @@ class MemoryStorage:
         self.db.execute(
             "DELETE FROM relations WHERE source_id = ? OR target_id = ?", (memory_id, memory_id)
         )
+
+        # Delete cognition log entries
+        self.db.execute("DELETE FROM cognition_log WHERE memory_id = ?", (memory_id,))
 
         # Delete memory
         cursor = self.db.execute("DELETE FROM memories WHERE id = ?", (memory_id,))

@@ -2,7 +2,6 @@
 
 import json
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any, Optional
 
 from llm_brain.core.config import BrainConfig, get_config
@@ -74,7 +73,7 @@ class CognitionLogger:
 
         entries: list[dict[str, Any]] = []
 
-        with open(self.config.log_path, "r") as f:
+        with open(self.config.log_path) as f:
             for line in f:
                 line = line.strip()
                 if not line:

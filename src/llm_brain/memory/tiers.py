@@ -1,11 +1,9 @@
 """Memory tier management and promotion/demotion logic."""
 
-import time
-from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from llm_brain.core.config import BrainConfig, get_config
-from llm_brain.memory.models import Memory, MemoryTier
+from llm_brain.memory.models import MemoryTier
 from llm_brain.memory.storage import MemoryStorage
 
 
