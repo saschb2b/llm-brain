@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM-Brain Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f23;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid #0f3460;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            color: #e94560;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header .status {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #00d9ff;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid #0f3460;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(233, 69, 96, 0.1);
+        }
+
+        .card h3 {
+            color: #e94560;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .metric {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 0.25rem;
+        }
+
+        .health-status {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .health-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #0f0f23;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .health-item.ok {
+            border: 1px solid #00d9ff;
+            color: #00d9ff;
+        }
+
+        .health-item.warning {
+            border: 1px solid #ffa500;
+            color: #ffa500;
+        }
+
+        .health-item.error {
+            border: 1px solid #e94560;
+            color: #e94560;
+        }
+
+        .tier-bar {
+            display: flex;
+            height: 40px;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .tier-segment {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: width 0.3s ease;
+        }
+
+        .tier-working { background: #e94560; }
+        .tier-episodic { background: #0f3460; }
+        .tier-semantic { background: #00d9ff; color: #000; }
+
+        .memory-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .memory-item {
+            padding: 1rem;
+            background: #0f0f23;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            border-left: 3px solid #e94560;
+            transition: background 0.2s;
+        }
+
+        .memory-item:hover {
+            background: #16213e;
+        }
+
+        .memory-item .text {
+            font-size: 0.9rem;
+            color: #e0e0e0;
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+        }
+
+        .memory-item .meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .memory-item .tier-badge {
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .badge-working { background: #e94560; color: white; }
+        .badge-episodic { background: #0f3460; color: white; }
+        .badge-semantic { background: #00d9ff; color: black; }
+
+        .activity-feed {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            border-bottom: 1px solid #0f3460;
+            font-size: 0.85rem;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-time {
+            color: #888;
+            font-size: 0.75rem;
+            min-width: 60px;
+        }
+
+        .activity-type {
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .type-store { background: #00d9ff; color: #000; }
+        .type-retrieve { background: #e94560; color: #fff; }
+        .type-forget { background: #ffa500; color: #000; }
+        .type-default { background: #666; color: #fff; }
+
+        .refresh-indicator {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #e94560;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .refresh-indicator.active {
+            opacity: 1;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #0f3460;
+            border-top-color: #e94560;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f0f23;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #0f3460;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #e94560;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>
+            <span>🧠</span>
+            LLM-Brain Dashboard
+        </h1>
+        <div class="status">
+            <span class="status-dot"></span>
+            <span id="connection-status">Live</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Key Metrics -->
+        <div class="grid">
+            <div class="card">
+                <h3>💾 Total Memories</h3>
+                <div class="metric" id="total-memories">-</div>
+                <div class="metric-label">across all tiers</div>
+            </div>
+
+            <div class="card">
+                <h3>📊 Database Size</h3>
+                <div class="metric" id="db-size">-</div>
+                <div class="metric-label">MB on disk</div>
+            </div>
+
+            <div class="card">
+                <h3>🔗 Graph Nodes</h3>
+                <div class="metric" id="graph-nodes">-</div>
+                <div class="metric-label">in knowledge graph</div>
+            </div>
+
+            <div class="card">
+                <h3>⚡ Health Status</h3>
+                <div class="health-status" id="health-status">
+                    <span class="loading"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tier Distribution -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3>📈 Memory Distribution by Tier</h3>
+            <div class="tier-bar" id="tier-bar">
+                <div class="tier-segment tier-working" style="width: 33%">Working</div>
+                <div class="tier-segment tier-episodic" style="width: 33%">Episodic</div>
+                <div class="tier-segment tier-semantic" style="width: 34%">Semantic</div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 1rem; font-size: 0.85rem; color: #888;">
+                <span><span style="color: #e94560;">●</span> Working: <strong id="count-working">-</strong></span>
+                <span><span style="color: #0f3460;">●</span> Episodic: <strong id="count-episodic">-</strong></span>
+                <span><span style="color: #00d9ff;">●</span> Semantic: <strong id="count-semantic">-</strong></span>
+            </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+            <!-- Recent Activity -->
+            <div class="card">
+                <h3>🔴 Live Activity Feed</h3>
+                <div class="activity-feed" id="activity-feed">
+                    <div class="activity-item">
+                        <span class="loading"></span>
+                        <span>Loading activity...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Important Memories -->
+            <div class="card">
+                <h3>⭐ Most Important Memories</h3>
+                <div class="memory-list" id="important-memories">
+                    <div style="text-align: center; padding: 2rem; color: #888;">
+                        <span class="loading"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Memories -->
+        <div class="card" style="margin-top: 2rem;">
+            <h3>🕐 Recently Accessed Memories</h3>
+            <div class="memory-list" id="recent-memories">
+                <div style="text-align: center; padding: 2rem; color: #888;">
+                    <span class="loading"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="refresh-indicator" id="refresh-indicator">
+        <span>⟳</span>
+        <span>Updating...</span>
+    </div>
+
+    <script>
+        // Configuration
+        const REFRESH_INTERVAL = 3000; // 3 seconds
+
+        // State
+        let lastActivityCount = 0;
+
+        // Helper functions
+        function formatTime(isoString) {
+            const date = new Date(isoString);
+            return date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        function formatTimeAgo(isoString) {
+            const date = new Date(isoString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+
+            if (seconds < 60) return `${seconds}s ago`;
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+            return `${Math.floor(seconds / 86400)}d ago`;
+        }
+
+        function showRefreshIndicator() {
+            const indicator = document.getElementById('refresh-indicator');
+            indicator.classList.add('active');
+            setTimeout(() => indicator.classList.remove('active'), 500);
+        }
+
+        // API calls
+        async function fetchMetrics() {
+            try {
+                const response = await fetch('/api/metrics/live');
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to fetch metrics:', error);
+                return null;
+            }
+        }
+
+        async function fetchActivity() {
+            try {
+                const response = await fetch('/api/cognition/log?limit=10');
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to fetch activity:', error);
+                return [];
+            }
+        }
+
+        async function fetchImportantMemories() {
+            try {
+                const response = await fetch('/api/memories/important?limit=5');
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to fetch important memories:', error);
+                return [];
+            }
+        }
+
+        async function fetchRecentMemories() {
+            try {
+                const response = await fetch('/api/memories/recent?limit=5');
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to fetch recent memories:', error);
+                return [];
+            }
+        }
+
+        // UI Updates
+        function updateMetrics(data) {
+            if (!data) return;
+
+            // Total memories
+            const total = Object.values(data.tier_counts).reduce((a, b) => a + b, 0);
+            document.getElementById('total-memories').textContent = total;
+
+            // DB size
+            document.getElementById('db-size').textContent = data.db_size_mb.toFixed(2);
+
+            // Graph nodes
+            const graphStats = data.stats.graph || {};
+            document.getElementById('graph-nodes').textContent =
+                graphStats.available ? graphStats.nodes : 'N/A';
+
+            // Health status
+            const healthContainer = document.getElementById('health-status');
+            const health = data.health;
+            healthContainer.innerHTML = `
+                <div class="health-item ${health.initialized ? 'ok' : 'error'}">
+                    ${health.initialized ? '✓' : '✗'} Initialized
+                </div>
+                <div class="health-item ${health.writable ? 'ok' : 'error'}">
+                    ${health.writable ? '✓' : '✗'} Writable
+                </div>
+                <div class="health-item ${health.sqlite_vec_loaded ? 'ok' : 'warning'}">
+                    ${health.sqlite_vec_loaded ? '✓' : '○'} sqlite-vec
+                </div>
+                <div class="health-item ${health.graph_available ? 'ok' : 'warning'}">
+                    ${health.graph_available ? '✓' : '○'} Graph
+                </div>
+            `;
+
+            // Tier counts
+            document.getElementById('count-working').textContent = data.tier_counts.working || 0;
+            document.getElementById('count-episodic').textContent = data.tier_counts.episodic || 0;
+            document.getElementById('count-semantic').textContent = data.tier_counts.semantic || 0;
+
+            // Tier bar
+            const total2 = total || 1; // Avoid division by zero
+            document.getElementById('tier-bar').innerHTML = `
+                <div class="tier-segment tier-working" style="width: ${(data.tier_counts.working / total2) * 100}%">
+                    ${data.tier_counts.working > 0 ? data.tier_counts.working : ''}
+                </div>
+                <div class="tier-segment tier-episodic" style="width: ${(data.tier_counts.episodic / total2) * 100}%">
+                    ${data.tier_counts.episodic > 0 ? data.tier_counts.episodic : ''}
+                </div>
+                <div class="tier-segment tier-semantic" style="width: ${(data.tier_counts.semantic / total2) * 100}%">
+                    ${data.tier_counts.semantic > 0 ? data.tier_counts.semantic : ''}
+                </div>
+            `;
+        }
+
+        function updateActivity(activities) {
+            const container = document.getElementById('activity-feed');
+
+            if (activities.length === 0) {
+                container.innerHTML = '<div class="activity-item"><span style="color: #888;">No recent activity</span></div>';
+                return;
+            }
+
+            // Check if there are new activities
+            if (activities.length !== lastActivityCount) {
+                lastActivityCount = activities.length;
+                showRefreshIndicator();
+            }
+
+            container.innerHTML = activities.map(activity => {
+                const typeClass = `type-${activity.operation || 'default'}`;
+                return `
+                    <div class="activity-item">
+                        <span class="activity-time">${formatTime(activity.timestamp * 1000)}</span>
+                        <span class="activity-type ${typeClass}">${activity.operation}</span>
+                        <span>${activity.memory_id ? activity.memory_id.slice(0, 8) + '...' : 'System'}</span>
+                        ${activity.latency_ms ? `<span style="color: #888; margin-left: auto;">${activity.latency_ms}ms</span>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateImportantMemories(memories) {
+            const container = document.getElementById('important-memories');
+
+            if (memories.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: #888;">No memories yet</div>';
+                return;
+            }
+
+            container.innerHTML = memories.map(memory => `
+                <div class="memory-item">
+                    <div class="text">${memory.raw_text}</div>
+                    <div class="meta">
+                        <span class="tier-badge badge-${memory.tier}">${memory.tier}</span>
+                        <span>⭐ ${memory.importance.toFixed(3)}</span>
+                        <span>👁 ${memory.access_count}</span>
+                        <span style="margin-left: auto;">${formatTimeAgo(memory.last_accessed)}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateRecentMemories(memories) {
+            const container = document.getElementById('recent-memories');
+
+            if (memories.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: #888;">No memories yet</div>';
+                return;
+            }
+
+            container.innerHTML = memories.map(memory => `
+                <div class="memory-item">
+                    <div class="text">${memory.raw_text}</div>
+                    <div class="meta">
+                        <span class="tier-badge badge-${memory.tier}">${memory.tier}</span>
+                        <span>⭐ ${memory.importance.toFixed(3)}</span>
+                        <span>👁 ${memory.access_count}</span>
+                        <span style="margin-left: auto;">${formatTimeAgo(memory.last_accessed)}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Main update loop
+        async function update() {
+            const metrics = await fetchMetrics();
+            updateMetrics(metrics);
+
+            const activity = await fetchActivity();
+            updateActivity(activity);
+        }
+
+        async function updateMemories() {
+            const important = await fetchImportantMemories();
+            updateImportantMemories(important);
+
+            const recent = await fetchRecentMemories();
+            updateRecentMemories(recent);
+        }
+
+        // Initialize
+        async function init() {
+            await update();
+            await updateMemories();
+
+            // Start polling
+            setInterval(update, REFRESH_INTERVAL);
+            setInterval(updateMemories, REFRESH_INTERVAL * 2); // Memories update less frequently
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>

@@ -36,16 +36,24 @@ dev = [
     "mypy>=1.8.0",
     "pre-commit>=3.0.0",
 ]
+web = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "jinja2>=3.1.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/saschametz/llm-brain"
 Repository = "https://github.com/saschametz/llm-brain"
 
+[project.scripts]
+llm-brain-dashboard = "llm_brain.web.server:run_dashboard"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-llm_brain = ["py.typed", "core/schema.sql"]
+llm_brain = ["py.typed", "core/schema.sql", "web/templates/*", "web/static/*"]
 
 # =============================================================================
 # RUFF: Ultra-fast Python linter & formatter (replaces Black, Flake8, isort)

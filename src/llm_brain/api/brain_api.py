@@ -242,6 +242,20 @@ class Brain:
 
         return self.storage.recall_by_importance(tier, top_k)
 
+    def recall_by_tier(self, tier: Union[MemoryTier, str]) -> list[Memory]:
+        """Get all memories from a specific tier.
+
+        Args:
+            tier: Memory tier
+
+        Returns:
+            List of memories in that tier
+        """
+        if isinstance(tier, str):
+            tier = MemoryTier(tier)
+
+        return self.storage.recall_by_tier(tier)
+
     def recall_related(
         self,
         memory_id: str,

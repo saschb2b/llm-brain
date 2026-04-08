@@ -301,6 +301,26 @@ class MemoryStorage:
 
         return [Memory.from_db_row(row, self.config.vector_dimensions) for row in cursor.fetchall()]
 
+    def recall_by_tier(self, tier: MemoryTier) -> list[Memory]:
+        """Get all memories from a specific tier.
+
+        Args:
+            tier: Memory tier
+
+        Returns:
+            List of memories in that tier
+        """
+        cursor = self.db.execute(
+            """
+            SELECT * FROM memories
+            WHERE tier = ?
+            ORDER BY accessed_at DESC
+            """,
+            (tier.value,),
+        )
+
+        return [Memory.from_db_row(row, self.config.vector_dimensions) for row in cursor.fetchall()]
+
     def update_tier(self, memory_id: str, new_tier: MemoryTier) -> bool:
         """Update memory tier.
 
@@ -375,3 +395,36 @@ class MemoryStorage:
             self.db.commit()
         except Exception:  # noqa: S110 - Don't fail on logging errors
             pass
+
+    def read_cognition_log(self, limit: int = 20) -> list[dict[str, Any]]:
+        """Read recent cognition log entries.
+
+        Args:
+            limit: Maximum number of entries to return
+
+        Returns:
+            List of log entries as dictionaries
+        """
+        try:
+            cursor = self.db.execute(
+                """
+                SELECT * FROM cognition_log
+                ORDER BY timestamp DESC
+                LIMIT ?
+                """,
+                (limit,),
+            )
+            return [
+                {
+                    "id": row["id"],
+                    "timestamp": row["timestamp"],
+                    "operation": row["operation"],
+                    "memory_id": row["memory_id"],
+                    "context_query": row["context_query"],
+                    "latency_ms": row["latency_ms"],
+                    "metadata": row["metadata"],
+                }
+                for row in cursor.fetchall()
+            ]
+        except Exception:
+            return []
