@@ -43,7 +43,13 @@ class Database:
         conn.row_factory = sqlite3.Row
 
         # Enable WAL mode for concurrent reads/writes
-        conn.execute("PRAGMA journal_mode = WAL")
+        # Only set if not already WAL (setting requires exclusive lock)
+        try:
+            journal_mode = conn.execute("PRAGMA journal_mode").fetchone()[0]
+            if journal_mode != "wal":
+                conn.execute("PRAGMA journal_mode = WAL")
+        except sqlite3.OperationalError:
+            pass  # Couldn't set WAL (db locked), continue anyway
 
         # Enable foreign keys
         conn.execute("PRAGMA foreign_keys = ON")
