@@ -109,6 +109,28 @@ pip install -e ".[dev]"
 **Note on Windows**: The `kuzu` graph database requires C++ build tools on Windows. 
 If you get build errors, install without graph support: `pip install -e ".[vec,web]"`
 
+## Web Dashboard
+
+Monitor your brain in real-time with the web dashboard:
+
+```bash
+# Install with web support
+pip install -e ".[web]"
+
+# Launch dashboard
+llm-brain-dashboard
+# Or: python -m llm_brain.web.server
+```
+
+Open http://localhost:8080 in your browser.
+
+**Features:**
+- Live memory metrics (counts, DB size, health status)
+- Visual tier distribution (Working/Episodic/Semantic)
+- Recent activity feed from cognition log
+- Most important memories list
+- Auto-refreshes every 3 seconds
+
 ## Quick Start
 
 ### Option 1: Kimi Skill (Recommended)
