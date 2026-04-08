@@ -54,9 +54,6 @@ all = [
 Homepage = "https://github.com/saschametz/llm-brain"
 Repository = "https://github.com/saschametz/llm-brain"
 
-[project.scripts]
-llm-brain-dashboard = "llm_brain.web.server:run_dashboard"
-
 [tool.setuptools.packages.find]
 where = ["src"]
 

@@ -118,8 +118,7 @@ Monitor your brain in real-time with the web dashboard:
 pip install -e ".[web]"
 
 # Launch dashboard
-llm-brain-dashboard
-# Or: python -m llm_brain.web.server
+python -m llm_brain.web.server
 ```
 
 Open http://localhost:8080 in your browser.
