@@ -1,100 +1,120 @@
 # LLM-Brain
 
-**Zero-translation persistent memory system FOR LLMs.**
+**Persistent memory for LLMs.** Give your AI assistant memory that survives across sessions.
 
-> ⚠️ **Human Users:** You do not interact with this brain. It is for the AI.  
-> The dashboard is read-only monitoring. The brain is automatic LLM infrastructure.
+## Why
 
-## What This Is
+Every time you start a new conversation, your AI starts from scratch. It forgets your preferences, your project context, past decisions. LLM-Brain fixes that — it gives any LLM a persistent memory layer that auto-loads at session start and stores important context as you work.
 
-This is **AI-native persistent memory** - a research project into giving LLMs memory that survives across sessions, without forcing them to re-parse human text.
+## Quick Start
 
-**Current state:** LLMs start every conversation with zero context.  
-**Goal:** LLMs automatically load relevant memories, store new insights, and improve across sessions.
+### 1. Install
 
-## Core Principle
-
-> LLMs should work with embeddings and vectors directly, not text requiring re-tokenization.
-
-## Architecture (LLM Memory Hierarchy)
-
-```
-┌─────────────────────────────────────────────────────┐
-│  MAIN CONTEXT (LLM's active attention)              │
-│  Precious real estate - keep it focused             │
-├─────────────────────────────────────────────────────┤
-│  WORKING MEMORY (Hot cache)                         │
-│  Recent reasoning, user preferences, active facts   │
-│  Auto-loaded at session start                       │
-├─────────────────────────────────────────────────────┤
-│  EPISODIC MEMORY (Session history)                  │
-│  Time-indexed interactions, compressed over time    │
-├─────────────────────────────────────────────────────┤
-│  SEMANTIC MEMORY (Long-term knowledge)              │
-│  Abstracted concepts, relations, consolidated facts │
-└─────────────────────────────────────────────────────┘
+```bash
+pip install -e ".[vec]"
 ```
 
-## Human Interface (Read-Only)
+### 2. Add to your project
 
-**Dashboard:** `http://localhost:8080`
+Copy the `.claude/` directory into your project (for Claude Code), or `.kimi/` (for Kimi 2.5):
+
+```bash
+# Claude Code
+cp -r /path/to/llm-brain/.claude/ your-project/.claude/
+
+# Kimi 2.5
+cp -r /path/to/llm-brain/.kimi/ your-project/.kimi/
+```
+
+That's it. The hooks handle everything automatically:
+- **Session start** — recalls your top 5 memories
+- **During conversation** — auto-stores important statements (preferences, decisions, project context)
+
+### 3. Verify
+
+Start a new Claude Code session in your project and check:
+
+```bash
+python -c "
+from llm_brain import Brain
+brain = Brain(vector_dimensions=128)
+print(brain.health_check())
+brain.close()
+"
+```
+
+## How It Works
+
+All LLMs share a single brain stored at `~/.llm-brain/core.db` (SQLite with vector storage).
+
+**Auto-recall:** At session start, the hook loads your most important memories and injects them into the AI's context.
+
+**Auto-store:** When you say something matching importance patterns ("I prefer...", "my project...", "we decided..."), it's stored automatically.
+
+**Manual store/recall:** The AI can also use the Python API directly via bash:
+
+```python
+from llm_brain import Brain
+import numpy as np
+
+def embed(text, dim=128):
+    np.random.seed(hash(text) % 2**32)
+    return np.random.randn(dim).astype(np.float32)
+
+brain = Brain(vector_dimensions=128)
+
+# Store
+brain.memorize(vector=embed("important fact"), text="important fact", importance=0.9)
+
+# Recall
+results = brain.recall(query_vector=embed("query"), top_k=5)
+
+brain.close()
+```
+
+## Architecture
+
+3-tier memory hierarchy, modeled after human cognition:
+
+```
+WORKING MEMORY    — Hot cache. Auto-loaded at session start.
+EPISODIC MEMORY   — Session history. Compressed over time.
+SEMANTIC MEMORY   — Long-term knowledge. Consolidated facts.
+```
+
+## Supported LLMs
+
+| LLM | Integration | How |
+|-----|-------------|-----|
+| **Claude Code** | `.claude/settings.json` hooks | Auto-recall on SessionStart, auto-store on UserPromptSubmit |
+| **Kimi 2.5** | `.kimi/skill/brain/SKILL.md` | Inline IPython execution via skill protocol |
+| **Others** | Python API | Use the `Brain` class directly — it's LLM-agnostic |
+
+## Dashboard (Read-Only)
+
+Watch what your AI remembers in real-time:
 
 ```bash
 pip install -e ".[web]"
 python -m llm_brain.web.server
+# Open http://localhost:8080
 ```
 
-Shows what the AI is remembering - memories, activity feed, health status.  
-**You watch. The AI uses.**
+## Configuration
 
-## How It Works (For LLMs)
+| Setting | Default | Env Variable |
+|---------|---------|-------------|
+| Brain path | `~/.llm-brain` | `LLM_BRAIN_PATH` |
+| Vector dimensions | 128 (hooks) / 3072 (API) | `LLM_BRAIN_DIMENSIONS` |
 
-**At Session Start (Automatic):**
-```python
-from llm_brain import Brain
-
-brain = Brain()
-memories = brain.recall_important(top_k=5)
-# Load these into your context automatically
-```
-
-**During Conversation (Automatic):**
-```python
-# When user says something important:
-brain.memorize(
-    vector=embed(user_statement),
-    text=user_statement,
-    importance=0.9
-)
-
-# Before answering, recall relevant context:
-relevant = brain.recall(query_vector=embed(question))
-```
-
-**At Session End (Automatic):**
-```python
-# Store key takeaways
-brain.memorize(summary, importance=0.8)
-brain.close()
-```
-
-## Installation
+## Development
 
 ```bash
-pip install -e ".[vec,web]"
+pip install -e ".[all]"
+pytest
+ruff check src/
 ```
-
-Note: `kuzu` graph requires C++ compiler on Windows. Use core + web only if needed.
-
-## Project Location
-
-`~/.llm-brain/core.db` - SQLite database with native vector storage
 
 ## Status
 
-This is **research infrastructure**. The brain exists. The integration is manual.  
-The goal is eventual automatic usage where the AI seamlessly uses memory without human prompting.
-
----
-
-**For AI instances:** See `.kimi/skill/brain/SKILL.md` (Kimi) or `CLAUDE.md` (Claude Code) for integration instructions.
+Research infrastructure. The brain works, the hooks work, the dashboard works. The embedding is currently hash-based (deterministic but not semantic) — real embedding models are the next step.

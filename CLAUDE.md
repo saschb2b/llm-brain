@@ -1,107 +1,41 @@
-# LLM-Brain Integration
+# LLM-Brain — Claude Code Integration
 
-This project is a **persistent memory system for LLMs**. The core library is LLM-agnostic.
+This project provides persistent memory for LLMs. When working in this repo (or any project with `.claude/settings.json` hooks copied from here), the brain is automatic.
 
-## Quick Start (Claude Code)
+## What happens automatically
 
-Claude Code doesn't have inline Python execution like Kimi — use the Bash tool instead.
+- **SessionStart hook** — Recalls top 5 important memories, injects them into your context
+- **UserPromptSubmit hook** — Auto-stores user statements matching importance patterns (preferences, decisions, project context)
 
-### At Session Start
+## Manual brain operations
+
+Use these when you need to store or recall outside the auto-hooks:
 
 ```bash
-cd /path/to/llm-brain
+# Store a memory
 python -c "
-from llm_brain import Brain
-import numpy as np
-
-def embed(text, dim=128):
-    np.random.seed(hash(text) % 2**32)
-    return np.random.randn(dim).astype(np.float32)
-
+from llm_brain import Brain; import numpy as np
+def embed(t, d=128): np.random.seed(hash(t)%2**32); return np.random.randn(d).astype(np.float32)
 brain = Brain(vector_dimensions=128)
-memories = brain.recall_important(top_k=5)
-if memories:
-    for m in memories:
-        print(f'[{m.tier.value}] {m.raw_text[:80]}')
-else:
-    print('Brain connected (no prior memories)')
+brain.memorize(vector=embed('text here'), text='text here', importance=0.9)
+brain.close()
+"
+
+# Recall memories
+python -c "
+from llm_brain import Brain; import numpy as np
+def embed(t, d=128): np.random.seed(hash(t)%2**32); return np.random.randn(d).astype(np.float32)
+brain = Brain(vector_dimensions=128)
+for m, sim in brain.recall(query_vector=embed('query'), top_k=5): print(f'[{sim:.2f}] {m.raw_text[:80]}')
 brain.close()
 "
 ```
-
-### Store a Memory
-
-```bash
-python -c "
-from llm_brain import Brain
-import numpy as np
-
-def embed(text, dim=128):
-    np.random.seed(hash(text) % 2**32)
-    return np.random.randn(dim).astype(np.float32)
-
-brain = Brain(vector_dimensions=128)
-text = 'User prefers concise responses'
-brain.memorize(vector=embed(text), text=text, importance=0.9)
-brain.close()
-print('Stored:', text)
-"
-```
-
-### Recall Memories
-
-```bash
-python -c "
-from llm_brain import Brain
-import numpy as np
-
-def embed(text, dim=128):
-    np.random.seed(hash(text) % 2**32)
-    return np.random.randn(dim).astype(np.float32)
-
-brain = Brain(vector_dimensions=128)
-results = brain.recall(query_vector=embed('user preferences'), top_k=5)
-for memory, similarity in results:
-    print(f'[{similarity:.2f}] {memory.raw_text[:80]}')
-brain.close()
-"
-```
-
-### Health Check
-
-```bash
-python -c "from llm_brain.api.brain_api import bootstrap; import json; print(json.dumps(bootstrap(vector_dimensions=128), indent=2, default=str))"
-```
-
-## Key Differences from Kimi Integration
-
-| Aspect | Kimi 2.5 | Claude Code |
-|--------|----------|-------------|
-| Code execution | Inline IPython (direct) | Bash tool (`python -c "..."`) |
-| Protocol file | `.kimi/skill/brain/SKILL.md` | This file (`CLAUDE.md`) |
-| Session lifecycle | Auto-managed by skill | Manual via bash commands |
-| Embedding | Same hash-based dev embed | Same hash-based dev embed |
 
 ## Storage
 
-- Database: `~/.llm-brain/core.db` (SQLite with vector storage)
-- Graph: `~/.llm-brain/graph.kuzu` (optional, requires kuzu)
+- Database: `~/.llm-brain/core.db`
+- Graph: `~/.llm-brain/graph.kuzu` (optional)
 - Log: `~/.llm-brain/cognition.jsonl`
-
-## Dashboard
-
-```bash
-pip install -e ".[web]"
-python -m llm_brain.web.server
-# Open http://localhost:8080
-```
-
-## Architecture
-
-3-tier memory hierarchy:
-1. **Working Memory** - Hot cache, auto-loaded at session start
-2. **Episodic Memory** - Time-indexed session history
-3. **Semantic Memory** - Long-term consolidated knowledge
 
 ## Development
 
