@@ -7,7 +7,6 @@ from llm_brain import Brain, MemoryTier
 
 def main():
     """Demonstrate basic LLM-Brain functionality."""
-
     print("=" * 60)
     print("LLM-Brain Basic Usage Example")
     print("=" * 60)
@@ -52,7 +51,7 @@ def main():
     # Create relation
     print("\n3. Creating relation...")
     brain.relate(id1, id2, "extends", weight=0.8)
-    print(f"   ✓ Related memory 1 → memory 2 (extends)")
+    print("   ✓ Related memory 1 → memory 2 (extends)")
 
     # Recall by ID
     print("\n4. Recalling by ID...")
