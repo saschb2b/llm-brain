@@ -1,0 +1,59 @@
+# Pre-commit hooks: Run checks before each commit
+# Install: pre-commit install
+# Update: pre-commit autoupdate
+# Run manually: pre-commit run --all-files
+# Skip: git commit -m "message" --no-verify (not recommended)
+
+repos:
+  # Ruff: Fast linting and formatting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+      # Run the linter
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        types_or: [python, pyi]
+      # Run the formatter
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  # MyPy: Static type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - pydantic>=2.0.0
+          - types-setuptools
+          - numpy>=1.24.0
+        args: [--strict, --ignore-missing-imports]
+        exclude: ^(tests/|scripts/)
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # Prevent committing to main branch
+      - id: no-commit-to-branch
+        args: [--branch, main, --branch, master]
+      # Check for merge conflicts
+      - id: check-merge-conflict
+      # Check YAML syntax
+      - id: check-yaml
+      # Check JSON syntax
+      - id: check-json
+      # Check TOML syntax
+      - id: check-toml
+      # Ensure files end with newline
+      - id: end-of-file-fixer
+      # Trim trailing whitespace
+      - id: trailing-whitespace
+      # Check for added large files
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      # Check for debug statements
+      - id: debug-statements
+      # Check for case conflicts
+      - id: check-case-conflict
+      # Check for docstring first
+      - id: check-docstring-first
