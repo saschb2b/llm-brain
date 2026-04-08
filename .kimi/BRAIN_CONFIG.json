@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "auto_detect": true,
-  "brain_path": "~/.kimi-brain",
+  "brain_path": "~/.llm-brain",
   "auto_recall_on_start": true,
   "working_memory_limit": 10,
   "vector_dimensions": 3072

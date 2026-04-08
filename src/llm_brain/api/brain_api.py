@@ -432,7 +432,7 @@ def create_brain(brain_path: Optional[str] = None, vector_dimensions: int = 3072
     """Create and initialize a new Brain instance.
 
     Args:
-        brain_path: Storage path (default: ~/.kimi-brain)
+        brain_path: Storage path (default: ~/.llm-brain)
         vector_dimensions: Embedding dimensions
 
     Returns:

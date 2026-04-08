@@ -88,7 +88,7 @@ Note: `kuzu` graph requires C++ compiler on Windows. Use core + web only if need
 
 ## Project Location
 
-`~/.kimi-brain/core.db` - SQLite database with native vector storage
+`~/.llm-brain/core.db` - SQLite database with native vector storage
 
 ## Status
 
@@ -97,4 +97,4 @@ The goal is eventual automatic usage where the AI seamlessly uses memory without
 
 ---
 
-**For AI instances:** See `.kimi/skill/brain/SKILL.md` for integration instructions.
+**For AI instances:** See `.kimi/skill/brain/SKILL.md` (Kimi) or `CLAUDE.md` (Claude Code) for integration instructions.

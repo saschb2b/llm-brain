@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"\nimport json\nfrom llm_brain import Brain\nbrain = Brain(vector_dimensions=128)\nmemories = brain.recall_important(top_k=5)\nctx = ''\nif memories:\n    ctx = 'LLM-Brain loaded memories:\\n'\n    for m in memories:\n        ctx += f'  - [{m.tier.value}] {m.raw_text}\\n'\nelse:\n    ctx = 'LLM-Brain connected (no prior memories)'\nbrain.close()\nprint(json.dumps({'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': ctx}}))\n\"",
+            "timeout": 10,
+            "statusMessage": "Loading brain memories..."
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"\nimport json, sys\ndata = json.load(sys.stdin)\nprompt = data.get('prompt', '')\npatterns = ['prefer', 'like', 'work at', 'my project', 'decided', 'important', 'remember this']\nimportance = 0.0\nfor p in patterns:\n    if p.lower() in prompt.lower():\n        importance = max(importance, 0.85)\nif importance > 0:\n    import numpy as np\n    from llm_brain import Brain\n    def embed(text, dim=128):\n        np.random.seed(hash(text) % 2**32)\n        return np.random.randn(dim).astype(np.float32)\n    brain = Brain(vector_dimensions=128)\n    brain.memorize(vector=embed(prompt), text=prompt, importance=importance)\n    brain.close()\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'UserPromptSubmit', 'additionalContext': f'Stored to brain: {prompt[:60]}'}}))\nelse:\n    print(json.dumps({}))\n\"",
+            "timeout": 10,
+            "statusMessage": "Checking brain relevance..."
+          }
+        ]
+      }
+    ]
+  }
+}

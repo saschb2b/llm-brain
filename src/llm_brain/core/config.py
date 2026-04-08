@@ -20,7 +20,7 @@ class BrainConfig:
         importance_threshold: Threshold for auto-promotion to semantic
     """
 
-    brain_path: Union[Path, str] = field(default_factory=lambda: Path.home() / ".kimi-brain")
+    brain_path: Union[Path, str] = field(default_factory=lambda: Path.home() / ".llm-brain")
     db_name: str = "core.db"
     vector_dimensions: int = 3072
     default_embedding_model: str = "text-embedding-3-large"
