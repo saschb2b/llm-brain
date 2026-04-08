@@ -380,10 +380,23 @@ class MemoryStorage:
     def _log_operation(
         self, operation: str, memory_id: Optional[str], context: Optional[str], latency_ms: int
     ) -> None:
-        """Log operation to cognition_log."""
+        """Log operation to cognition_log.
+
+        Uses a separate short-timeout connection to avoid blocking
+        when dashboard or other processes have the DB locked.
+        """
+        import sqlite3  # noqa: PLC0415
+
         try:
+            # Use a new connection with short timeout to avoid blocking
+            conn = sqlite3.connect(
+                str(self.config.db_path),
+                timeout=0.5,  # 500ms timeout - fail fast if locked
+            )
+            conn.row_factory = sqlite3.Row
+
             now = int(datetime.now(timezone.utc).timestamp())
-            self.db.execute(
+            conn.execute(
                 """
                 INSERT INTO cognition_log (
                     timestamp, operation, memory_id, context_query, latency_ms
@@ -392,7 +405,8 @@ class MemoryStorage:
                 """,
                 (now, operation, memory_id, context, latency_ms),
             )
-            self.db.commit()
+            conn.commit()
+            conn.close()
         except Exception:  # noqa: S110 - Don't fail on logging errors
             pass
 
