@@ -10,7 +10,7 @@ import numpy as np
 
 from llm_brain.core.config import get_config
 from llm_brain.core.database import get_database, reset_database
-from llm_brain.graph.kuzu_graph import get_graph, reset_graph
+from llm_brain.graph import get_graph, reset_graph
 from llm_brain.memory.models import (
     Embedding,
     Memory,
