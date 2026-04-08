@@ -176,7 +176,7 @@ class Memory(BaseModel):
         }
 
     @classmethod
-    def from_db_row(cls, row: Any, dimensions: int = 3072) -> "Memory":
+    def from_db_row(cls, row: Any, dimensions: int = 3072) -> "Memory":  # noqa: ARG003
         """Create Memory from database row.
 
         Args:
@@ -191,10 +191,14 @@ class Memory(BaseModel):
         # Parse embedding
         embedding: Optional[Embedding] = None
         if row["vector"]:
-            vector = np.frombuffer(row["vector"], dtype=np.float16, count=dimensions).astype(
-                np.float32
-            )
-            embedding = Embedding(vector=vector, dimensions=len(vector))
+            try:
+                blob = row["vector"]
+                actual_dims = len(blob) // 2  # float16 = 2 bytes
+                vector = np.frombuffer(blob, dtype=np.float16, count=actual_dims).astype(np.float32)
+                embedding = Embedding(vector=vector, dimensions=len(vector))
+            except (ValueError, BufferError):
+                # Invalid vector data, skip
+                pass
 
         # Parse metadata
         meta_dict: dict[str, Any] = {}
