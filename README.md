@@ -8,9 +8,11 @@ Every time you start a new conversation, your AI starts from scratch. It forgets
 
 ## Quick Start
 
-### 1. Install
+### 1. Clone and install
 
 ```bash
+git clone https://github.com/saschb2b/llm-brain.git
+cd llm-brain
 pip install -e ".[vec]"
 ```
 
@@ -20,10 +22,10 @@ Copy the `.claude/` directory into your project (for Claude Code), or `.kimi/` (
 
 ```bash
 # Claude Code
-cp -r /path/to/llm-brain/.claude/ your-project/.claude/
+cp -r .claude/ /path/to/your-project/.claude/
 
 # Kimi 2.5
-cp -r /path/to/llm-brain/.kimi/ your-project/.kimi/
+cp -r .kimi/ /path/to/your-project/.kimi/
 ```
 
 That's it. The hooks handle everything automatically:
