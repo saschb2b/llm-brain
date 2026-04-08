@@ -321,6 +321,98 @@ class MemoryStorage:
 
         return [Memory.from_db_row(row, self.config.vector_dimensions) for row in cursor.fetchall()]
 
+    def recall_recent(self, top_k: int = 10) -> list[Memory]:
+        """Retrieve most recently accessed memories across all tiers.
+
+        Args:
+            top_k: Number of results
+
+        Returns:
+            List of memories sorted by last accessed time
+        """
+        cursor = self.db.execute(
+            """
+            SELECT * FROM memories
+            ORDER BY accessed_at DESC
+            LIMIT ?
+            """,
+            (top_k,),
+        )
+        return [Memory.from_db_row(row, self.config.vector_dimensions) for row in cursor.fetchall()]
+
+    def recall_most_important(self, top_k: int = 10) -> list[Memory]:
+        """Retrieve most important memories across all tiers.
+
+        Args:
+            top_k: Number of results
+
+        Returns:
+            List of memories sorted by importance
+        """
+        cursor = self.db.execute(
+            """
+            SELECT * FROM memories
+            ORDER BY importance DESC, access_count DESC
+            LIMIT ?
+            """,
+            (top_k,),
+        )
+        return [Memory.from_db_row(row, self.config.vector_dimensions) for row in cursor.fetchall()]
+
+    def recall_all(self, top_k: int = 100) -> list[Memory]:
+        """Retrieve all memories, limited.
+
+        Args:
+            top_k: Maximum number of results
+
+        Returns:
+            List of memories
+        """
+        cursor = self.db.execute(
+            """
+            SELECT * FROM memories
+            ORDER BY importance DESC
+            LIMIT ?
+            """,
+            (top_k,),
+        )
+        return [Memory.from_db_row(row, self.config.vector_dimensions) for row in cursor.fetchall()]
+
+    def search_memories(self, query: str, top_k: int = 20) -> list[Memory]:
+        """Search memories by text content.
+
+        Args:
+            query: Text to search for (case-insensitive substring match)
+            top_k: Maximum number of results
+
+        Returns:
+            List of matching memories sorted by importance
+        """
+        cursor = self.db.execute(
+            """
+            SELECT * FROM memories
+            WHERE raw_text LIKE ?
+            ORDER BY importance DESC
+            LIMIT ?
+            """,
+            (f"%{query}%", top_k),
+        )
+        return [Memory.from_db_row(row, self.config.vector_dimensions) for row in cursor.fetchall()]
+
+    def count_by_tier(self) -> dict[str, int]:
+        """Get memory counts per tier efficiently.
+
+        Returns:
+            Dict mapping tier name to count
+        """
+        cursor = self.db.execute(
+            "SELECT tier, COUNT(*) as cnt FROM memories GROUP BY tier"
+        )
+        result = {tier.value: 0 for tier in MemoryTier}
+        for row in cursor.fetchall():
+            result[row["tier"]] = row["cnt"]
+        return result
+
     def update_tier(self, memory_id: str, new_tier: MemoryTier) -> bool:
         """Update memory tier.
 

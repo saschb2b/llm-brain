@@ -5,858 +5,735 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>LLM-Brain Dashboard</title>
         <style>
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
 
             body {
-                font-family:
-                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                    sans-serif;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                 background: #0f0f23;
                 color: #e0e0e0;
                 line-height: 1.6;
             }
 
+            /* Header */
             .header {
                 background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-                padding: 1.5rem 2rem;
+                padding: 1rem 2rem;
                 border-bottom: 2px solid #0f3460;
+                display: flex;
+                align-items: center;
+                gap: 1rem;
             }
-
             .header h1 {
-                font-size: 1.8rem;
+                font-size: 1.5rem;
                 color: #e94560;
                 display: flex;
                 align-items: center;
                 gap: 0.5rem;
+                white-space: nowrap;
             }
-
-            .header .status {
+            .header .search-box {
+                flex: 1;
+                max-width: 400px;
+                margin-left: 2rem;
+                position: relative;
+            }
+            .header .search-box input {
+                width: 100%;
+                padding: 0.5rem 0.75rem 0.5rem 2rem;
+                background: #0f0f23;
+                border: 1px solid #0f3460;
+                border-radius: 8px;
+                color: #e0e0e0;
+                font-size: 0.85rem;
+                outline: none;
+                transition: border-color 0.2s;
+            }
+            .header .search-box input:focus { border-color: #e94560; }
+            .header .search-box::before {
+                content: "\1F50D";
+                position: absolute;
+                left: 0.6rem;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 0.8rem;
+                opacity: 0.5;
+            }
+            .status-area {
                 margin-left: auto;
                 display: flex;
                 align-items: center;
                 gap: 0.5rem;
-                font-size: 0.9rem;
+                font-size: 0.85rem;
+                white-space: nowrap;
             }
-
             .status-dot {
-                width: 10px;
-                height: 10px;
+                width: 8px;
+                height: 8px;
                 border-radius: 50%;
                 background: #00d9ff;
-                animation: pulse 2s infinite;
+                transition: background 0.3s;
             }
+            .status-dot.error { background: #e94560; }
+            .status-dot.ok { animation: pulse 2s infinite; }
+            @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-            @keyframes pulse {
-                0%,
-                100% {
-                    opacity: 1;
-                }
-                50% {
-                    opacity: 0.5;
-                }
+            /* Error banner */
+            .error-banner {
+                background: #e9456020;
+                border-bottom: 1px solid #e94560;
+                padding: 0.5rem 2rem;
+                font-size: 0.85rem;
+                color: #e94560;
+                display: none;
+                align-items: center;
+                gap: 0.5rem;
             }
+            .error-banner.visible { display: flex; }
 
-            .container {
-                max-width: 1400px;
-                margin: 0 auto;
-                padding: 2rem;
-            }
-
+            /* Layout */
+            .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
             .grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                gap: 1.5rem;
-                margin-bottom: 2rem;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 1.25rem;
+                margin-bottom: 1.5rem;
             }
+            .grid-2 {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1.25rem;
+                margin-bottom: 1.5rem;
+            }
+            @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
 
+            /* Cards */
             .card {
                 background: #1a1a2e;
-                border-radius: 12px;
-                padding: 1.5rem;
+                border-radius: 10px;
+                padding: 1.25rem;
                 border: 1px solid #0f3460;
-                transition:
-                    transform 0.2s,
-                    box-shadow 0.2s;
             }
-
-            .card:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 24px rgba(233, 69, 96, 0.1);
-            }
-
             .card h3 {
                 color: #e94560;
-                font-size: 0.85rem;
+                font-size: 0.8rem;
                 text-transform: uppercase;
                 letter-spacing: 1px;
-                margin-bottom: 1rem;
+                margin-bottom: 0.75rem;
                 display: flex;
                 align-items: center;
                 gap: 0.5rem;
             }
+            .metric { font-size: 2.2rem; font-weight: 700; color: #fff; }
+            .metric-label { font-size: 0.8rem; color: #888; margin-top: 0.15rem; }
 
-            .metric {
-                font-size: 2.5rem;
-                font-weight: 700;
-                color: #fff;
-            }
-
-            .metric-label {
-                font-size: 0.85rem;
-                color: #888;
-                margin-top: 0.25rem;
-            }
-
-            .health-status {
-                display: flex;
-                gap: 1rem;
-                flex-wrap: wrap;
-                margin-top: 1rem;
-            }
-
+            /* Health */
+            .health-status { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.75rem; }
             .health-item {
                 display: flex;
                 align-items: center;
-                gap: 0.5rem;
-                padding: 0.5rem 1rem;
+                gap: 0.4rem;
+                padding: 0.35rem 0.75rem;
                 background: #0f0f23;
                 border-radius: 20px;
-                font-size: 0.85rem;
+                font-size: 0.8rem;
             }
+            .health-item.ok { border: 1px solid #00d9ff; color: #00d9ff; }
+            .health-item.error { border: 1px solid #e94560; color: #e94560; }
+            .health-item.optional { border: 1px solid #555; color: #888; }
 
-            .health-item.ok {
-                border: 1px solid #00d9ff;
-                color: #00d9ff;
-            }
-
-            .health-item.warning {
-                border: 1px solid #ffa500;
-                color: #ffa500;
-            }
-
-            .health-item.error {
-                border: 1px solid #e94560;
-                color: #e94560;
-            }
-
-            .health-item.optional {
-                border: 1px solid #666;
-                color: #888;
-            }
-
-            .tier-bar {
-                display: flex;
-                height: 40px;
-                border-radius: 8px;
-                overflow: hidden;
-                margin-top: 1rem;
-            }
-
+            /* Tier bar */
+            .tier-bar { display: flex; height: 32px; border-radius: 6px; overflow: hidden; margin-top: 0.75rem; }
             .tier-segment {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 0.8rem;
+                font-size: 0.75rem;
                 font-weight: 600;
                 transition: width 0.3s ease;
+                min-width: 0;
             }
-
-            .tier-working {
-                background: #e94560;
-            }
-            .tier-episodic {
-                background: #0f3460;
-            }
-            .tier-semantic {
-                background: #00d9ff;
-                color: #000;
-            }
-
-            .memory-list {
-                max-height: 400px;
-                overflow-y: auto;
-            }
-
-            .memory-item {
-                padding: 1rem;
-                background: #0f0f23;
-                border-radius: 8px;
-                margin-bottom: 0.75rem;
-                border-left: 3px solid #e94560;
-                transition: background 0.2s;
-            }
-
-            .memory-item:hover {
-                background: #16213e;
-            }
-
-            .memory-item .text {
-                font-size: 0.9rem;
-                color: #e0e0e0;
-                margin-bottom: 0.5rem;
-                line-height: 1.5;
-            }
-
-            .memory-item .meta {
+            .tier-working { background: #e94560; }
+            .tier-episodic { background: #0f3460; }
+            .tier-semantic { background: #00d9ff; color: #000; }
+            .tier-legend {
                 display: flex;
-                gap: 1rem;
-                font-size: 0.75rem;
+                justify-content: space-between;
+                margin-top: 0.75rem;
+                font-size: 0.8rem;
                 color: #888;
             }
 
-            .memory-item .tier-badge {
-                padding: 0.2rem 0.5rem;
-                border-radius: 4px;
+            /* Memory list */
+            .memory-list { max-height: 400px; overflow-y: auto; }
+            .memory-item {
+                padding: 0.75rem;
+                background: #0f0f23;
+                border-radius: 6px;
+                margin-bottom: 0.5rem;
+                border-left: 3px solid #e94560;
+                transition: background 0.15s;
+                position: relative;
+            }
+            .memory-item:hover { background: #16213e; }
+            .memory-item .text {
+                font-size: 0.85rem;
+                color: #e0e0e0;
+                margin-bottom: 0.4rem;
+                line-height: 1.4;
+                word-break: break-word;
+            }
+            .memory-item .meta {
+                display: flex;
+                gap: 0.75rem;
                 font-size: 0.7rem;
+                color: #888;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+            .tier-badge {
+                padding: 0.15rem 0.4rem;
+                border-radius: 3px;
+                font-size: 0.65rem;
                 text-transform: uppercase;
                 font-weight: 600;
             }
+            .badge-working { background: #e94560; color: white; }
+            .badge-episodic { background: #0f3460; color: white; }
+            .badge-semantic { background: #00d9ff; color: black; }
 
-            .badge-working {
-                background: #e94560;
-                color: white;
+            .btn-forget {
+                position: absolute;
+                top: 0.5rem;
+                right: 0.5rem;
+                background: transparent;
+                border: 1px solid #e9456040;
+                color: #e94560;
+                border-radius: 4px;
+                padding: 0.15rem 0.4rem;
+                font-size: 0.65rem;
+                cursor: pointer;
+                opacity: 0;
+                transition: opacity 0.15s;
             }
-            .badge-episodic {
-                background: #0f3460;
-                color: white;
-            }
-            .badge-semantic {
-                background: #00d9ff;
-                color: black;
-            }
+            .memory-item:hover .btn-forget { opacity: 1; }
+            .btn-forget:hover { background: #e94560; color: white; }
 
-            .activity-feed {
-                max-height: 300px;
-                overflow-y: auto;
-            }
-
+            /* Activity feed */
+            .activity-feed { max-height: 300px; overflow-y: auto; }
             .activity-item {
                 display: flex;
                 align-items: center;
-                gap: 1rem;
-                padding: 0.75rem;
+                gap: 0.75rem;
+                padding: 0.5rem;
                 border-bottom: 1px solid #0f3460;
-                font-size: 0.85rem;
+                font-size: 0.8rem;
             }
-
-            .activity-item:last-child {
-                border-bottom: none;
-            }
-
-            .activity-time {
-                color: #888;
-                font-size: 0.75rem;
-                min-width: 60px;
-            }
-
+            .activity-item:last-child { border-bottom: none; }
+            .activity-time { color: #888; font-size: 0.7rem; min-width: 55px; }
             .activity-type {
-                padding: 0.2rem 0.5rem;
-                border-radius: 4px;
-                font-size: 0.7rem;
+                padding: 0.15rem 0.4rem;
+                border-radius: 3px;
+                font-size: 0.65rem;
                 text-transform: uppercase;
                 font-weight: 600;
-                min-width: 60px;
+                min-width: 55px;
                 text-align: center;
             }
+            .type-store { background: #00d9ff; color: #000; }
+            .type-retrieve { background: #e94560; color: #fff; }
+            .type-forget { background: #ffa500; color: #000; }
+            .type-default { background: #444; color: #fff; }
 
-            .type-store {
-                background: #00d9ff;
-                color: #000;
+            /* Search results overlay */
+            .search-results {
+                display: none;
+                margin-bottom: 1.5rem;
             }
-            .type-retrieve {
-                background: #e94560;
-                color: #fff;
+            .search-results.visible { display: block; }
+            .search-results .card h3 {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
             }
-            .type-forget {
-                background: #ffa500;
-                color: #000;
+            .search-close {
+                background: transparent;
+                border: none;
+                color: #888;
+                cursor: pointer;
+                font-size: 1rem;
+                padding: 0 0.25rem;
             }
-            .type-default {
-                background: #666;
-                color: #fff;
-            }
+            .search-close:hover { color: #e94560; }
 
-            .refresh-indicator {
+            /* Graph */
+            .graph-header {
+                display: flex;
+                gap: 1rem;
+                margin-bottom: 0.75rem;
+                font-size: 0.8rem;
+                color: #888;
+                align-items: center;
+            }
+            #graph-canvas {
+                width: 100%;
+                height: 350px;
+                background: #0f0f23;
+                border-radius: 6px;
+                display: block;
+            }
+            .graph-tooltip {
                 position: fixed;
-                bottom: 2rem;
-                right: 2rem;
-                background: #e94560;
-                color: white;
-                padding: 0.75rem 1.5rem;
-                border-radius: 30px;
-                font-size: 0.85rem;
+                background: #1a1a2e;
+                border: 1px solid #0f3460;
+                border-radius: 6px;
+                padding: 0.5rem 0.75rem;
+                font-size: 0.8rem;
+                color: #e0e0e0;
+                pointer-events: none;
+                display: none;
+                z-index: 100;
+                max-width: 300px;
+                word-break: break-word;
+            }
+
+            /* Empty state */
+            .empty-state { text-align: center; padding: 2rem; color: #555; font-size: 0.85rem; }
+
+            /* Scrollbar */
+            ::-webkit-scrollbar { width: 6px; }
+            ::-webkit-scrollbar-track { background: transparent; }
+            ::-webkit-scrollbar-thumb { background: #0f3460; border-radius: 3px; }
+            ::-webkit-scrollbar-thumb:hover { background: #e94560; }
+
+            /* Confirm dialog */
+            .confirm-overlay {
+                position: fixed;
+                inset: 0;
+                background: #0008;
                 display: flex;
                 align-items: center;
-                gap: 0.5rem;
-                opacity: 0;
-                transition: opacity 0.3s;
-                pointer-events: none;
+                justify-content: center;
+                z-index: 200;
             }
-
-            .refresh-indicator.active {
-                opacity: 1;
+            .confirm-box {
+                background: #1a1a2e;
+                border: 1px solid #0f3460;
+                border-radius: 10px;
+                padding: 1.5rem;
+                max-width: 400px;
+                width: 90%;
             }
-
-            .loading {
-                display: inline-block;
-                width: 20px;
-                height: 20px;
-                border: 2px solid #0f3460;
-                border-top-color: #e94560;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
+            .confirm-box p { margin-bottom: 1rem; font-size: 0.9rem; }
+            .confirm-box .actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
+            .confirm-box button {
+                padding: 0.4rem 1rem;
+                border-radius: 6px;
+                border: 1px solid #0f3460;
+                cursor: pointer;
+                font-size: 0.85rem;
             }
-
-            @keyframes spin {
-                to {
-                    transform: rotate(360deg);
-                }
-            }
-
-            ::-webkit-scrollbar {
-                width: 8px;
-            }
-
-            ::-webkit-scrollbar-track {
-                background: #0f0f23;
-            }
-
-            ::-webkit-scrollbar-thumb {
-                background: #0f3460;
-                border-radius: 4px;
-            }
-
-            ::-webkit-scrollbar-thumb:hover {
-                background: #e94560;
-            }
+            .confirm-box .btn-cancel { background: transparent; color: #888; }
+            .confirm-box .btn-confirm { background: #e94560; color: white; border-color: #e94560; }
         </style>
     </head>
     <body>
         <div class="header">
-            <h1>
-                <span>🧠</span>
-                LLM-Brain Dashboard
-            </h1>
-            <div class="status">
-                <span class="status-dot"></span>
+            <h1><span>&#129504;</span> LLM-Brain</h1>
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Search memories..." />
+            </div>
+            <div class="status-area">
+                <span class="status-dot ok" id="status-dot"></span>
                 <span id="connection-status">Live</span>
             </div>
         </div>
 
+        <div class="error-banner" id="error-banner">
+            <strong>Disconnected</strong> &mdash; <span id="error-message">Cannot reach server</span>
+        </div>
+
         <div class="container">
+            <!-- Search results (hidden by default) -->
+            <div class="search-results" id="search-results">
+                <div class="card">
+                    <h3>
+                        <span>Search Results (<span id="search-count">0</span>)</span>
+                        <button class="search-close" onclick="closeSearch()">&times;</button>
+                    </h3>
+                    <div class="memory-list" id="search-list"></div>
+                </div>
+            </div>
+
             <!-- Key Metrics -->
             <div class="grid">
                 <div class="card">
-                    <h3>💾 Total Memories</h3>
+                    <h3>Total Memories</h3>
                     <div class="metric" id="total-memories">-</div>
                     <div class="metric-label">across all tiers</div>
                 </div>
-
                 <div class="card">
-                    <h3>📊 Database Size</h3>
+                    <h3>Database Size</h3>
                     <div class="metric" id="db-size">-</div>
                     <div class="metric-label">MB on disk</div>
                 </div>
-
                 <div class="card">
-                    <h3>🔗 Graph Nodes</h3>
-                    <div class="metric" id="graph-nodes">-</div>
-                    <div class="metric-label">in knowledge graph</div>
+                    <h3>Graph</h3>
+                    <div class="metric" id="graph-nodes" style="font-size: 1.4rem">-</div>
+                    <div class="metric-label">knowledge graph</div>
                 </div>
-
                 <div class="card">
-                    <h3>⚡ Health Status</h3>
+                    <h3>Health</h3>
                     <div class="health-status" id="health-status">
-                        <span class="loading"></span>
+                        <span class="empty-state">Loading...</span>
                     </div>
                 </div>
             </div>
 
             <!-- Tier Distribution -->
-            <div class="card" style="margin-bottom: 2rem">
-                <h3>📈 Memory Distribution by Tier</h3>
-                <div class="tier-bar" id="tier-bar">
-                    <div class="tier-segment tier-working" style="width: 33%">
-                        Working
-                    </div>
-                    <div class="tier-segment tier-episodic" style="width: 33%">
-                        Episodic
-                    </div>
-                    <div class="tier-segment tier-semantic" style="width: 34%">
-                        Semantic
-                    </div>
-                </div>
-                <div
-                    style="
-                        display: flex;
-                        justify-content: space-between;
-                        margin-top: 1rem;
-                        font-size: 0.85rem;
-                        color: #888;
-                    "
-                >
-                    <span
-                        ><span style="color: #e94560">●</span> Working:
-                        <strong id="count-working">-</strong></span
-                    >
-                    <span
-                        ><span style="color: #0f3460">●</span> Episodic:
-                        <strong id="count-episodic">-</strong></span
-                    >
-                    <span
-                        ><span style="color: #00d9ff">●</span> Semantic:
-                        <strong id="count-semantic">-</strong></span
-                    >
+            <div class="card" style="margin-bottom: 1.5rem">
+                <h3>Memory Distribution</h3>
+                <div class="tier-bar" id="tier-bar"></div>
+                <div class="tier-legend">
+                    <span><span style="color: #e94560">&#9679;</span> Working: <strong id="count-working">-</strong></span>
+                    <span><span style="color: #0f3460">&#9679;</span> Episodic: <strong id="count-episodic">-</strong></span>
+                    <span><span style="color: #00d9ff">&#9679;</span> Semantic: <strong id="count-semantic">-</strong></span>
                 </div>
             </div>
 
-            <div class="grid" style="grid-template-columns: 1fr 1fr">
-                <!-- Recent Activity -->
+            <div class="grid-2">
+                <!-- Activity Feed -->
                 <div class="card">
-                    <h3>🔴 Live Activity Feed</h3>
+                    <h3>Activity Feed</h3>
                     <div class="activity-feed" id="activity-feed">
-                        <div class="activity-item">
-                            <span class="loading"></span>
-                            <span>Loading activity...</span>
-                        </div>
+                        <div class="empty-state">Loading...</div>
                     </div>
                 </div>
 
-                <!-- Top Important Memories -->
+                <!-- Important Memories -->
                 <div class="card">
-                    <h3>⭐ Most Important Memories</h3>
+                    <h3>Most Important</h3>
                     <div class="memory-list" id="important-memories">
-                        <div
-                            style="
-                                text-align: center;
-                                padding: 2rem;
-                                color: #888;
-                            "
-                        >
-                            <span class="loading"></span>
-                        </div>
+                        <div class="empty-state">Loading...</div>
                     </div>
                 </div>
             </div>
 
             <!-- Graph Visualization -->
-            <div class="card" style="margin-top: 2rem">
-                <h3>🕸️ Memory Graph Visualization</h3>
-                <div
-                    style="
-                        display: flex;
-                        gap: 1rem;
-                        margin-bottom: 1rem;
-                        font-size: 0.8rem;
-                        color: #888;
-                    "
-                >
-                    <span><span style="color: #e94560">●</span> Working</span>
-                    <span><span style="color: #0f3460">●</span> Episodic</span>
-                    <span><span style="color: #00d9ff">●</span> Semantic</span>
-                    <span id="graph-stats" style="margin-left: auto"
-                        >Loading...</span
-                    >
+            <div class="card" style="margin-bottom: 1.5rem">
+                <h3>Memory Graph</h3>
+                <div class="graph-header">
+                    <span><span style="color: #e94560">&#9679;</span> Working</span>
+                    <span><span style="color: #0f3460">&#9679;</span> Episodic</span>
+                    <span><span style="color: #00d9ff">&#9679;</span> Semantic</span>
+                    <span id="graph-stats" style="margin-left: auto">-</span>
                 </div>
-                <canvas
-                    id="graph-canvas"
-                    width="1200"
-                    height="400"
-                    style="
-                        width: 100%;
-                        height: 400px;
-                        background: #0f0f23;
-                        border-radius: 8px;
-                    "
-                ></canvas>
+                <canvas id="graph-canvas"></canvas>
             </div>
 
             <!-- Recent Memories -->
-            <div class="card" style="margin-top: 2rem">
-                <h3>🕐 Recently Accessed Memories</h3>
+            <div class="card">
+                <h3>Recently Accessed</h3>
                 <div class="memory-list" id="recent-memories">
-                    <div style="text-align: center; padding: 2rem; color: #888">
-                        <span class="loading"></span>
-                    </div>
+                    <div class="empty-state">Loading...</div>
                 </div>
             </div>
         </div>
 
-        <div class="refresh-indicator" id="refresh-indicator">
-            <span>⟳</span>
-            <span>Updating...</span>
-        </div>
+        <div class="graph-tooltip" id="graph-tooltip"></div>
 
         <script>
-            // Configuration
-            const REFRESH_INTERVAL = 3000; // 3 seconds
+            // --- Config ---
+            const POLL_FAST = 3000;
+            const POLL_SLOW = 6000;
+            let consecutiveErrors = 0;
 
-            // State
-            let lastActivityCount = 0;
-
-            // Helper functions
-            function formatTime(isoString) {
-                const date = new Date(isoString);
-                return date.toLocaleTimeString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                });
+            // --- Utilities ---
+            function esc(str) {
+                const el = document.createElement("span");
+                el.textContent = str;
+                return el.innerHTML;
             }
 
-            function formatTimeAgo(isoString) {
-                const date = new Date(isoString);
-                const now = new Date();
-                const seconds = Math.floor((now - date) / 1000);
-
-                if (seconds < 60) return `${seconds}s ago`;
-                if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-                if (seconds < 86400)
-                    return `${Math.floor(seconds / 3600)}h ago`;
-                return `${Math.floor(seconds / 86400)}d ago`;
+            function formatTime(ts) {
+                const d = typeof ts === "number" ? new Date(ts * 1000) : new Date(ts);
+                if (isNaN(d)) return "-";
+                return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
             }
 
-            function showRefreshIndicator() {
-                const indicator = document.getElementById("refresh-indicator");
-                indicator.classList.add("active");
-                setTimeout(() => indicator.classList.remove("active"), 500);
+            function timeAgo(iso) {
+                const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+                if (s < 0) return "just now";
+                if (s < 60) return s + "s ago";
+                if (s < 3600) return Math.floor(s / 60) + "m ago";
+                if (s < 86400) return Math.floor(s / 3600) + "h ago";
+                return Math.floor(s / 86400) + "d ago";
             }
 
-            // API calls
-            async function fetchMetrics() {
-                try {
-                    const response = await fetch("/api/metrics/live");
-                    return await response.json();
-                } catch (error) {
-                    console.error("Failed to fetch metrics:", error);
-                    return null;
+            // --- Error handling ---
+            function setConnected(ok, msg) {
+                const dot = document.getElementById("status-dot");
+                const label = document.getElementById("connection-status");
+                const banner = document.getElementById("error-banner");
+                if (ok) {
+                    consecutiveErrors = 0;
+                    dot.className = "status-dot ok";
+                    label.textContent = "Live";
+                    banner.classList.remove("visible");
+                } else {
+                    consecutiveErrors++;
+                    dot.className = "status-dot error";
+                    label.textContent = "Disconnected";
+                    document.getElementById("error-message").textContent = msg || "Cannot reach server";
+                    banner.classList.add("visible");
                 }
             }
 
-            async function fetchActivity() {
-                try {
-                    const response = await fetch("/api/cognition/log?limit=10");
-                    return await response.json();
-                } catch (error) {
-                    console.error("Failed to fetch activity:", error);
-                    return [];
-                }
+            async function apiFetch(url) {
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                return resp.json();
             }
 
-            async function fetchImportantMemories() {
-                try {
-                    const response = await fetch(
-                        "/api/memories/important?limit=5",
-                    );
-                    return await response.json();
-                } catch (error) {
-                    console.error("Failed to fetch important memories:", error);
-                    return [];
-                }
+            // --- Memory rendering ---
+            function renderMemoryItem(m, opts = {}) {
+                const borderColor = { working: "#e94560", episodic: "#0f3460", semantic: "#00d9ff" }[m.tier] || "#e94560";
+                const forgetBtn = opts.showForget !== false
+                    ? `<button class="btn-forget" onclick="confirmForget('${esc(m.id)}', this)">forget</button>`
+                    : "";
+                return `<div class="memory-item" style="border-left-color:${borderColor}">
+                    ${forgetBtn}
+                    <div class="text">${esc(m.raw_text)}</div>
+                    <div class="meta">
+                        <span class="tier-badge badge-${m.tier}">${m.tier}</span>
+                        <span>imp: ${m.importance.toFixed(2)}</span>
+                        <span>views: ${m.access_count}</span>
+                        <span style="margin-left:auto">${timeAgo(m.last_accessed)}</span>
+                    </div>
+                </div>`;
             }
 
-            async function fetchRecentMemories() {
-                try {
-                    const response = await fetch(
-                        "/api/memories/recent?limit=5",
-                    );
-                    return await response.json();
-                } catch (error) {
-                    console.error("Failed to fetch recent memories:", error);
-                    return [];
+            function renderMemoryList(containerId, memories, opts) {
+                const el = document.getElementById(containerId);
+                if (!memories.length) {
+                    el.innerHTML = '<div class="empty-state">No memories</div>';
+                    return;
                 }
+                el.innerHTML = memories.map(m => renderMemoryItem(m, opts)).join("");
             }
 
-            // UI Updates
-            function updateMetrics(data) {
-                if (!data) return;
+            // --- Forget confirmation ---
+            function confirmForget(memoryId, btn) {
+                const overlay = document.createElement("div");
+                overlay.className = "confirm-overlay";
+                overlay.innerHTML = `<div class="confirm-box">
+                    <p>Delete memory <code>${esc(memoryId.slice(0, 12))}...</code>?</p>
+                    <div class="actions">
+                        <button class="btn-cancel">Cancel</button>
+                        <button class="btn-confirm">Delete</button>
+                    </div>
+                </div>`;
+                document.body.appendChild(overlay);
 
-                // Total memories
-                const total = Object.values(data.tier_counts).reduce(
-                    (a, b) => a + b,
-                    0,
-                );
-                document.getElementById("total-memories").textContent = total;
-
-                // DB size
-                document.getElementById("db-size").textContent =
-                    data.db_size_mb.toFixed(2);
-
-                // Graph nodes - show count + implementation type
-                const graphStats = data.stats.graph || {};
-                let graphDisplay =
-                    '<span style="color:#666">Not available</span>';
-                if (graphStats.available) {
-                    const impl = graphStats.implementation
-                        ? `[${graphStats.implementation}]`
-                        : "";
-                    const nodes = graphStats.nodes || 0;
-                    const edges = graphStats.edges || 0;
-                    graphDisplay = `${impl} ${nodes} nodes, ${edges} edges`;
-                }
-                document.getElementById("graph-nodes").innerHTML = graphDisplay;
-
-                // Health status - better indicators for optional components
-                const healthContainer =
-                    document.getElementById("health-status");
-                const health = data.health;
-
-                // Helper to get status icon and class
-                const getStatus = (isOk, isOptional) => {
-                    if (isOk) return { icon: "✓", cls: "ok" };
-                    if (isOptional) return { icon: "○", cls: "optional" };
-                    return { icon: "✗", cls: "error" };
+                overlay.querySelector(".btn-cancel").onclick = () => overlay.remove();
+                overlay.querySelector(".btn-confirm").onclick = async () => {
+                    overlay.remove();
+                    try {
+                        await fetch("/api/memories/" + encodeURIComponent(memoryId), { method: "DELETE" });
+                        refreshAll();
+                    } catch (e) {
+                        console.error("Delete failed:", e);
+                    }
                 };
-
-                const initStatus = getStatus(health.initialized, false);
-                const writeStatus = getStatus(health.writable, false);
-                const vecStatus = getStatus(health.sqlite_vec_loaded, true);
-                const graphStatus = getStatus(health.graph_available, true);
-
-                healthContainer.innerHTML = `
-                <div class="health-item ${initStatus.cls}">
-                    ${initStatus.icon} Initialized
-                </div>
-                <div class="health-item ${writeStatus.cls}">
-                    ${writeStatus.icon} Writable
-                </div>
-                <div class="health-item ${vecStatus.cls}" title="sqlite-vec is optional">
-                    ${vecStatus.icon} sqlite-vec
-                </div>
-                <div class="health-item ${graphStatus.cls}" title="Kuzu graph is optional">
-                    ${graphStatus.icon} Graph
-                </div>
-            `;
-
-                // Tier counts
-                document.getElementById("count-working").textContent =
-                    data.tier_counts.working || 0;
-                document.getElementById("count-episodic").textContent =
-                    data.tier_counts.episodic || 0;
-                document.getElementById("count-semantic").textContent =
-                    data.tier_counts.semantic || 0;
-
-                // Tier bar
-                const total2 = total || 1; // Avoid division by zero
-                document.getElementById("tier-bar").innerHTML = `
-                <div class="tier-segment tier-working" style="width: ${(data.tier_counts.working / total2) * 100}%">
-                    ${data.tier_counts.working > 0 ? data.tier_counts.working : ""}
-                </div>
-                <div class="tier-segment tier-episodic" style="width: ${(data.tier_counts.episodic / total2) * 100}%">
-                    ${data.tier_counts.episodic > 0 ? data.tier_counts.episodic : ""}
-                </div>
-                <div class="tier-segment tier-semantic" style="width: ${(data.tier_counts.semantic / total2) * 100}%">
-                    ${data.tier_counts.semantic > 0 ? data.tier_counts.semantic : ""}
-                </div>
-            `;
+                overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
             }
 
-            function updateActivity(activities) {
-                const container = document.getElementById("activity-feed");
+            // --- Search ---
+            let searchTimer = null;
+            document.getElementById("search-input").addEventListener("input", (e) => {
+                clearTimeout(searchTimer);
+                const q = e.target.value.trim();
+                if (!q) { closeSearch(); return; }
+                searchTimer = setTimeout(() => runSearch(q), 300);
+            });
 
-                if (activities.length === 0) {
-                    container.innerHTML =
-                        '<div class="activity-item"><span style="color: #888;">No recent activity</span></div>';
-                    return;
-                }
-
-                // Check if there are new activities
-                if (activities.length !== lastActivityCount) {
-                    lastActivityCount = activities.length;
-                    showRefreshIndicator();
-                }
-
-                container.innerHTML = activities
-                    .map((activity) => {
-                        const typeClass = `type-${activity.operation || "default"}`;
-                        return `
-                    <div class="activity-item">
-                        <span class="activity-time">${formatTime(activity.timestamp * 1000)}</span>
-                        <span class="activity-type ${typeClass}">${activity.operation}</span>
-                        <span>${activity.memory_id ? activity.memory_id.slice(0, 8) + "..." : "System"}</span>
-                        ${activity.latency_ms ? `<span style="color: #888; margin-left: auto;">${activity.latency_ms}ms</span>` : ""}
-                    </div>
-                `;
-                    })
-                    .join("");
-            }
-
-            function updateImportantMemories(memories) {
-                const container = document.getElementById("important-memories");
-
-                if (memories.length === 0) {
-                    container.innerHTML =
-                        '<div style="text-align: center; padding: 2rem; color: #888;">No memories yet</div>';
-                    return;
-                }
-
-                container.innerHTML = memories
-                    .map(
-                        (memory) => `
-                <div class="memory-item">
-                    <div class="text">${memory.raw_text}</div>
-                    <div class="meta">
-                        <span class="tier-badge badge-${memory.tier}">${memory.tier}</span>
-                        <span>⭐ ${memory.importance.toFixed(3)}</span>
-                        <span>👁 ${memory.access_count}</span>
-                        <span style="margin-left: auto;">${formatTimeAgo(memory.last_accessed)}</span>
-                    </div>
-                </div>
-            `,
-                    )
-                    .join("");
-            }
-
-            function updateRecentMemories(memories) {
-                const container = document.getElementById("recent-memories");
-
-                if (memories.length === 0) {
-                    container.innerHTML =
-                        '<div style="text-align: center; padding: 2rem; color: #888;">No memories yet</div>';
-                    return;
-                }
-
-                container.innerHTML = memories
-                    .map(
-                        (memory) => `
-                <div class="memory-item">
-                    <div class="text">${memory.raw_text}</div>
-                    <div class="meta">
-                        <span class="tier-badge badge-${memory.tier}">${memory.tier}</span>
-                        <span>⭐ ${memory.importance.toFixed(3)}</span>
-                        <span>👁 ${memory.access_count}</span>
-                        <span style="margin-left: auto;">${formatTimeAgo(memory.last_accessed)}</span>
-                    </div>
-                </div>
-            `,
-                    )
-                    .join("");
-            }
-
-            // Main update loop
-            async function update() {
-                const metrics = await fetchMetrics();
-                updateMetrics(metrics);
-
-                const activity = await fetchActivity();
-                updateActivity(activity);
-            }
-
-            async function updateMemories() {
-                const important = await fetchImportantMemories();
-                updateImportantMemories(important);
-
-                const recent = await fetchRecentMemories();
-                updateRecentMemories(recent);
-            }
-
-            // Initialize
-            async function init() {
-                await update();
-                await updateMemories();
-
-                // Start polling
-                setInterval(update, REFRESH_INTERVAL);
-                setInterval(updateMemories, REFRESH_INTERVAL * 2); // Memories update less frequently
-            }
-
-            // Graph visualization
-            let graphData = { nodes: [], edges: [] };
-            let nodePositions = new Map();
-
-            async function fetchGraphData() {
+            async function runSearch(q) {
                 try {
-                    const response = await fetch("/api/graph/data");
-                    return await response.json();
-                } catch (error) {
-                    console.error("Failed to fetch graph data:", error);
-                    return { nodes: [], edges: [] };
+                    const results = await apiFetch("/api/memories/search?q=" + encodeURIComponent(q) + "&limit=20");
+                    document.getElementById("search-count").textContent = results.length;
+                    renderMemoryList("search-list", results);
+                    document.getElementById("search-results").classList.add("visible");
+                } catch (e) {
+                    console.error("Search failed:", e);
                 }
             }
 
-            function initializeNodePositions(nodes) {
-                const canvas = document.getElementById("graph-canvas");
-                const centerX = canvas.width / 2;
-                const centerY = canvas.height / 2;
-                const radius = Math.min(canvas.width, canvas.height) * 0.35;
-
-                nodePositions.clear();
-                nodes.forEach((node, i) => {
-                    const angle = (i / nodes.length) * 2 * Math.PI;
-                    nodePositions.set(node.id, {
-                        x: centerX + Math.cos(angle) * radius,
-                        y: centerY + Math.sin(angle) * radius,
-                        vx: 0,
-                        vy: 0,
-                    });
-                });
+            function closeSearch() {
+                document.getElementById("search-input").value = "";
+                document.getElementById("search-results").classList.remove("visible");
             }
 
-            function runForceLayout(nodes, edges) {
-                const canvas = document.getElementById("graph-canvas");
-                const centerX = canvas.width / 2;
-                const centerY = canvas.height / 2;
+            // --- Metrics update ---
+            async function updateMetrics() {
+                try {
+                    const data = await apiFetch("/api/metrics/live");
+                    setConnected(true);
 
-                // Simple force-directed layout iterations
-                for (let iter = 0; iter < 50; iter++) {
-                    // Repulsion
-                    for (let i = 0; i < nodes.length; i++) {
-                        const posA = nodePositions.get(nodes[i].id);
-                        for (let j = i + 1; j < nodes.length; j++) {
-                            const posB = nodePositions.get(nodes[j].id);
-                            const dx = posA.x - posB.x;
-                            const dy = posA.y - posB.y;
-                            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                            const force = 5000 / (dist * dist);
-                            const fx = (dx / dist) * force;
-                            const fy = (dy / dist) * force;
-                            posA.vx += fx;
-                            posA.vy += fy;
-                            posB.vx -= fx;
-                            posB.vy -= fy;
-                        }
+                    const total = Object.values(data.tier_counts).reduce((a, b) => a + b, 0);
+                    document.getElementById("total-memories").textContent = total;
+                    document.getElementById("db-size").textContent = data.db_size_mb.toFixed(2);
+
+                    // Graph info
+                    const g = data.stats.graph || {};
+                    const graphEl = document.getElementById("graph-nodes");
+                    if (g.available) {
+                        const impl = g.implementation ? `[${g.implementation}] ` : "";
+                        graphEl.textContent = `${impl}${g.nodes || 0} nodes, ${g.edges || 0} edges`;
+                    } else {
+                        graphEl.textContent = "Not available";
+                        graphEl.style.color = "#555";
                     }
 
-                    // Attraction along edges
-                    edges.forEach((edge) => {
-                        const posA = nodePositions.get(edge.source);
-                        const posB = nodePositions.get(edge.target);
-                        if (posA && posB) {
-                            const dx = posB.x - posA.x;
-                            const dy = posB.y - posA.y;
+                    // Health
+                    const h = data.health;
+                    const hc = document.getElementById("health-status");
+                    const pill = (ok, label, opt) => {
+                        const cls = ok ? "ok" : (opt ? "optional" : "error");
+                        const icon = ok ? "\u2713" : (opt ? "\u25CB" : "\u2717");
+                        return `<div class="health-item ${cls}">${icon} ${label}</div>`;
+                    };
+                    hc.innerHTML =
+                        pill(h.initialized, "Init", false) +
+                        pill(h.writable, "Write", false) +
+                        pill(h.sqlite_vec_loaded, "sqlite-vec", true) +
+                        pill(h.graph_available, "Graph", true);
+
+                    // Tier counts
+                    const tc = data.tier_counts;
+                    document.getElementById("count-working").textContent = tc.working || 0;
+                    document.getElementById("count-episodic").textContent = tc.episodic || 0;
+                    document.getElementById("count-semantic").textContent = tc.semantic || 0;
+
+                    const t = total || 1;
+                    document.getElementById("tier-bar").innerHTML =
+                        `<div class="tier-segment tier-working" style="width:${(tc.working / t) * 100}%">${tc.working > 0 ? tc.working : ""}</div>` +
+                        `<div class="tier-segment tier-episodic" style="width:${(tc.episodic / t) * 100}%">${tc.episodic > 0 ? tc.episodic : ""}</div>` +
+                        `<div class="tier-segment tier-semantic" style="width:${(tc.semantic / t) * 100}%">${tc.semantic > 0 ? tc.semantic : ""}</div>`;
+                } catch (e) {
+                    setConnected(false, e.message);
+                }
+            }
+
+            // --- Activity feed ---
+            let lastActivityHash = "";
+            async function updateActivity() {
+                try {
+                    const activities = await apiFetch("/api/cognition/log?limit=15");
+                    const container = document.getElementById("activity-feed");
+                    if (!activities.length) {
+                        container.innerHTML = '<div class="empty-state">No activity yet</div>';
+                        return;
+                    }
+                    container.innerHTML = activities.map(a => {
+                        const cls = "type-" + (a.operation || "default");
+                        return `<div class="activity-item">
+                            <span class="activity-time">${formatTime(a.timestamp)}</span>
+                            <span class="activity-type ${cls}">${esc(a.operation || "?")}</span>
+                            <span>${a.memory_id ? esc(a.memory_id.slice(0, 8)) + "..." : "system"}</span>
+                            ${a.latency_ms != null ? `<span style="color:#888;margin-left:auto">${a.latency_ms}ms</span>` : ""}
+                        </div>`;
+                    }).join("");
+                } catch (e) { /* handled by metrics */ }
+            }
+
+            // --- Memory lists ---
+            async function updateMemories() {
+                try {
+                    const [important, recent] = await Promise.all([
+                        apiFetch("/api/memories/important?limit=8"),
+                        apiFetch("/api/memories/recent?limit=8"),
+                    ]);
+                    renderMemoryList("important-memories", important);
+                    renderMemoryList("recent-memories", recent);
+                } catch (e) { /* handled by metrics */ }
+            }
+
+            // --- Graph visualization ---
+            let graphData = { nodes: [], edges: [] };
+            let nodePositions = new Map();
+            let hoveredNode = null;
+
+            function resizeCanvas() {
+                const canvas = document.getElementById("graph-canvas");
+                const rect = canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                const ctx = canvas.getContext("2d");
+                ctx.scale(dpr, dpr);
+                canvas._w = rect.width;
+                canvas._h = rect.height;
+            }
+
+            function initPositions(nodes) {
+                const canvas = document.getElementById("graph-canvas");
+                const cx = canvas._w / 2, cy = canvas._h / 2;
+                const r = Math.min(canvas._w, canvas._h) * 0.35;
+                // Keep existing positions for known nodes
+                const existing = new Set(nodePositions.keys());
+                const newMap = new Map();
+                nodes.forEach((node, i) => {
+                    if (existing.has(node.id)) {
+                        newMap.set(node.id, nodePositions.get(node.id));
+                    } else {
+                        const angle = (i / Math.max(nodes.length, 1)) * 2 * Math.PI;
+                        newMap.set(node.id, {
+                            x: cx + Math.cos(angle) * r + (Math.random() - 0.5) * 20,
+                            y: cy + Math.sin(angle) * r + (Math.random() - 0.5) * 20,
+                            vx: 0, vy: 0,
+                        });
+                    }
+                });
+                nodePositions = newMap;
+            }
+
+            function runForce(nodes, edges, iterations) {
+                const canvas = document.getElementById("graph-canvas");
+                const cx = canvas._w / 2, cy = canvas._h / 2;
+                for (let iter = 0; iter < iterations; iter++) {
+                    // Repulsion
+                    for (let i = 0; i < nodes.length; i++) {
+                        const a = nodePositions.get(nodes[i].id);
+                        if (!a) continue;
+                        for (let j = i + 1; j < nodes.length; j++) {
+                            const b = nodePositions.get(nodes[j].id);
+                            if (!b) continue;
+                            const dx = a.x - b.x, dy = a.y - b.y;
                             const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                            const force = (dist - 100) * 0.01 * edge.weight;
-                            const fx = (dx / dist) * force;
-                            const fy = (dy / dist) * force;
-                            posA.vx += fx;
-                            posA.vy += fy;
-                            posB.vx -= fx;
-                            posB.vy -= fy;
+                            const f = 3000 / (dist * dist);
+                            const fx = (dx / dist) * f, fy = (dy / dist) * f;
+                            a.vx += fx; a.vy += fy;
+                            b.vx -= fx; b.vy -= fy;
                         }
+                    }
+                    // Attraction
+                    edges.forEach(e => {
+                        const a = nodePositions.get(e.source), b = nodePositions.get(e.target);
+                        if (!a || !b) return;
+                        const dx = b.x - a.x, dy = b.y - a.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                        const f = (dist - 80) * 0.01 * e.weight;
+                        const fx = (dx / dist) * f, fy = (dy / dist) * f;
+                        a.vx += fx; a.vy += fy;
+                        b.vx -= fx; b.vy -= fy;
                     });
-
-                    // Center gravity and update positions
-                    nodePositions.forEach((pos, id) => {
-                        pos.vx += (centerX - pos.x) * 0.001;
-                        pos.vy += (centerY - pos.y) * 0.001;
-                        pos.vx *= 0.8; // damping
-                        pos.vy *= 0.8;
-                        pos.x += pos.vx;
-                        pos.y += pos.vy;
-
-                        // Keep in bounds
-                        pos.x = Math.max(
-                            30,
-                            Math.min(canvas.width - 30, pos.x),
-                        );
-                        pos.y = Math.max(
-                            30,
-                            Math.min(canvas.height - 30, pos.y),
-                        );
+                    // Gravity + damping
+                    nodePositions.forEach(p => {
+                        p.vx += (cx - p.x) * 0.001;
+                        p.vy += (cy - p.y) * 0.001;
+                        p.vx *= 0.75; p.vy *= 0.75;
+                        p.x += p.vx; p.y += p.vy;
+                        p.x = Math.max(25, Math.min(canvas._w - 25, p.x));
+                        p.y = Math.max(25, Math.min(canvas._h - 25, p.y));
                     });
                 }
             }
@@ -864,111 +741,143 @@
             function drawGraph() {
                 const canvas = document.getElementById("graph-canvas");
                 const ctx = canvas.getContext("2d");
+                const w = canvas._w, h = canvas._h;
                 const { nodes, edges } = graphData;
 
-                // Clear canvas
+                ctx.clearRect(0, 0, w, h);
                 ctx.fillStyle = "#0f0f23";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillRect(0, 0, w, h);
 
-                if (nodes.length === 0) {
-                    ctx.fillStyle = "#666";
-                    ctx.font = "14px sans-serif";
+                if (!nodes.length) {
+                    ctx.fillStyle = "#555";
+                    ctx.font = "13px sans-serif";
                     ctx.textAlign = "center";
-                    ctx.fillText(
-                        "No graph data available",
-                        canvas.width / 2,
-                        canvas.height / 2,
-                    );
+                    ctx.fillText("No graph data", w / 2, h / 2);
                     return;
                 }
 
-                // Draw edges
-                ctx.strokeStyle = "#0f3460";
-                ctx.lineWidth = 1;
-                edges.forEach((edge) => {
-                    const posA = nodePositions.get(edge.source);
-                    const posB = nodePositions.get(edge.target);
-                    if (posA && posB) {
-                        ctx.beginPath();
-                        ctx.moveTo(posA.x, posA.y);
-                        ctx.lineTo(posB.x, posB.y);
-                        ctx.stroke();
+                const tierColor = { working: "#e94560", episodic: "#0f3460", semantic: "#00d9ff" };
 
-                        // Draw edge weight
-                        const midX = (posA.x + posB.x) / 2;
-                        const midY = (posA.y + posB.y) / 2;
-                        ctx.fillStyle = "#444";
-                        ctx.font = "10px sans-serif";
-                        ctx.fillText(edge.type.slice(0, 3), midX, midY);
-                    }
+                // Edges
+                edges.forEach(e => {
+                    const a = nodePositions.get(e.source), b = nodePositions.get(e.target);
+                    if (!a || !b) return;
+                    ctx.strokeStyle = "#0f346080";
+                    ctx.lineWidth = Math.max(0.5, e.weight * 2);
+                    ctx.beginPath();
+                    ctx.moveTo(a.x, a.y);
+                    ctx.lineTo(b.x, b.y);
+                    ctx.stroke();
                 });
 
-                // Draw nodes
-                const tierColors = {
-                    working: "#e94560",
-                    episodic: "#0f3460",
-                    semantic: "#00d9ff",
-                };
-
-                nodes.forEach((node) => {
+                // Nodes
+                nodes.forEach(node => {
                     const pos = nodePositions.get(node.id);
                     if (!pos) return;
+                    const color = tierColor[node.tier] || "#666";
+                    const r = 4 + node.importance * 8;
+                    const isHovered = hoveredNode === node.id;
 
-                    const color = tierColors[node.tier] || "#666";
-                    const radius = 5 + node.importance * 10;
+                    // Glow
+                    if (isHovered) {
+                        const grad = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, r * 3);
+                        grad.addColorStop(0, color + "60");
+                        grad.addColorStop(1, "transparent");
+                        ctx.fillStyle = grad;
+                        ctx.beginPath();
+                        ctx.arc(pos.x, pos.y, r * 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
 
-                    // Glow effect
-                    const gradient = ctx.createRadialGradient(
-                        pos.x,
-                        pos.y,
-                        0,
-                        pos.x,
-                        pos.y,
-                        radius * 2,
-                    );
-                    gradient.addColorStop(0, color + "80");
-                    gradient.addColorStop(1, "transparent");
-                    ctx.fillStyle = gradient;
+                    ctx.fillStyle = isHovered ? "#fff" : color;
                     ctx.beginPath();
-                    ctx.arc(pos.x, pos.y, radius * 2, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    // Node circle
-                    ctx.fillStyle = color;
-                    ctx.beginPath();
-                    ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+                    ctx.arc(pos.x, pos.y, isHovered ? r + 2 : r, 0, Math.PI * 2);
                     ctx.fill();
 
                     // Label
-                    ctx.fillStyle = "#ccc";
-                    ctx.font = "11px sans-serif";
-                    ctx.textAlign = "center";
-                    ctx.fillText(
-                        node.label.slice(0, 20),
-                        pos.x,
-                        pos.y + radius + 14,
-                    );
+                    if (isHovered || nodes.length < 15) {
+                        ctx.fillStyle = "#aaa";
+                        ctx.font = "10px sans-serif";
+                        ctx.textAlign = "center";
+                        ctx.fillText(node.label.slice(0, 25), pos.x, pos.y + r + 12);
+                    }
                 });
             }
 
+            // Canvas mouse hover for tooltips
+            (function() {
+                const canvas = document.getElementById("graph-canvas");
+                const tooltip = document.getElementById("graph-tooltip");
+
+                canvas.addEventListener("mousemove", (e) => {
+                    const rect = canvas.getBoundingClientRect();
+                    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+                    let found = null;
+                    for (const node of graphData.nodes) {
+                        const pos = nodePositions.get(node.id);
+                        if (!pos) continue;
+                        const dx = pos.x - mx, dy = pos.y - my;
+                        const r = 4 + node.importance * 8 + 4;
+                        if (dx * dx + dy * dy < r * r) { found = node; break; }
+                    }
+                    if (found) {
+                        hoveredNode = found.id;
+                        tooltip.style.display = "block";
+                        tooltip.style.left = (e.clientX + 12) + "px";
+                        tooltip.style.top = (e.clientY - 10) + "px";
+                        tooltip.innerHTML = `<strong>${esc(found.label)}</strong><br>
+                            <span style="color:#888">tier:</span> ${found.tier} &nbsp;
+                            <span style="color:#888">imp:</span> ${found.importance.toFixed(2)}`;
+                    } else {
+                        hoveredNode = null;
+                        tooltip.style.display = "none";
+                    }
+                    drawGraph();
+                });
+
+                canvas.addEventListener("mouseleave", () => {
+                    hoveredNode = null;
+                    tooltip.style.display = "none";
+                    drawGraph();
+                });
+            })();
+
             async function updateGraph() {
-                const data = await fetchGraphData();
-                if (JSON.stringify(data) !== JSON.stringify(graphData)) {
+                try {
+                    const data = await apiFetch("/api/graph/data");
+                    const changed = data.nodes.length !== graphData.nodes.length ||
+                                    data.edges.length !== graphData.edges.length;
                     graphData = data;
-                    if (data.nodes.length > 0) {
-                        initializeNodePositions(data.nodes);
-                        runForceLayout(data.nodes, data.edges);
+                    if (changed && data.nodes.length > 0) {
+                        resizeCanvas();
+                        initPositions(data.nodes);
+                        runForce(data.nodes, data.edges, 60);
                     }
                     document.getElementById("graph-stats").textContent =
                         `${data.nodes.length} nodes, ${data.edges.length} edges`;
-                }
-                drawGraph();
+                    drawGraph();
+                } catch (e) { /* handled by metrics */ }
             }
 
-            // Start
-            init();
-            setInterval(updateGraph, REFRESH_INTERVAL * 2);
-            updateGraph();
+            // --- Refresh all ---
+            async function refreshAll() {
+                await Promise.all([updateMetrics(), updateActivity(), updateMemories(), updateGraph()]);
+            }
+
+            // --- Init ---
+            resizeCanvas();
+            window.addEventListener("resize", () => {
+                resizeCanvas();
+                if (graphData.nodes.length) {
+                    initPositions(graphData.nodes);
+                    runForce(graphData.nodes, graphData.edges, 30);
+                    drawGraph();
+                }
+            });
+
+            refreshAll();
+            setInterval(() => { updateMetrics(); updateActivity(); }, POLL_FAST);
+            setInterval(() => { updateMemories(); updateGraph(); }, POLL_SLOW);
         </script>
     </body>
 </html>
