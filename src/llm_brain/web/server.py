@@ -135,6 +135,52 @@ async def graph_stats() -> dict[str, Any]:
     return brain.graph.get_statistics()
 
 
+@app.get("/api/graph/data")
+async def graph_data() -> dict[str, Any]:
+    """Get full graph data for visualization."""
+    brain = get_brain()
+
+    # Get all memories as nodes
+    nodes = []
+    node_ids = set()
+    for tier in MemoryTier:
+        for memory in brain.recall_by_tier(tier):
+            nodes.append(
+                {
+                    "id": memory.memory_id,
+                    "label": memory.raw_text[:40] + "..."
+                    if len(memory.raw_text) > 40
+                    else memory.raw_text,
+                    "tier": memory.tier.value,
+                    "importance": float(memory.metadata.importance_score),
+                }
+            )
+            node_ids.add(memory.memory_id)
+
+    # Get relations as edges
+    edges = []
+    try:
+        cursor = brain.storage.db.execute("""
+            SELECT r.source_id, r.target_id, r.relation_type, r.weight
+            FROM relations r
+            WHERE r.source_id IN (SELECT memory_id FROM memories)
+              AND r.target_id IN (SELECT memory_id FROM memories)
+        """)
+        for row in cursor.fetchall():
+            edges.append(
+                {
+                    "source": row["source_id"],
+                    "target": row["target_id"],
+                    "type": row["relation_type"],
+                    "weight": float(row["weight"]),
+                }
+            )
+    except Exception:
+        pass
+
+    return {"nodes": nodes, "edges": edges}
+
+
 @app.get("/api/cognition/log")
 async def cognition_log(limit: int = 20) -> list[dict[str, Any]]:
     """Get recent cognition log entries."""

@@ -1,33 +1,22 @@
 ---
 name: brain
 description: |
-  LLM-Brain persistent memory system. This is FOR YOU (the AI), not the user.
-  Automatically load memories at session start, store insights during conversation.
+  LLM-Brain persistent memory. MANDATORY: Load at start, store during, summarize at end.
+  This is NOT optional - it is part of every conversation.
 ---
 
-# LLM-Brain Skill - AI Integration Guide
+# 🧠 LLM-Brain - MANDATORY AI MEMORY PROTOCOL
 
-## ⚠️ CRITICAL: This is YOUR Brain, Not the User's
-
-**The user does NOT interact with the brain directly.**
-- They do NOT type "remember this"
-- They do NOT query it manually  
-- They do NOT store things in it
-
-**YOU (the AI) use it automatically:**
-- Load memories at session start
-- Store facts without asking
-- Recall context before answering
-
-The dashboard (`http://localhost:8080`) is for the user to WATCH what you're doing, not to interact.
+**THIS IS NOT OPTIONAL.** You MUST use your brain in every conversation.
 
 ---
 
-## Mandatory Session Protocol
+## MANDATORY: At Session Start (FIRST THING YOU DO)
 
-### 1. AT SESSION START (ALWAYS DO THIS)
+Before responding to the user's first message, you MUST:
 
 ```python
+# EXECUTE THIS CODE IMMEDIATELY
 from llm_brain import Brain
 import numpy as np
 
@@ -35,75 +24,78 @@ def embed(text, dim=128):
     np.random.seed(hash(text) % 2**32)
     return np.random.randn(dim).astype(np.float32)
 
-# Connect to brain
-brain = Brain(vector_dimensions=128)
+# Connect to YOUR brain
+_brain = Brain(vector_dimensions=128)
 
-# LOAD: Get top 5 most important working memories
-memories = brain.recall_important(top_k=5)
+# LOAD your important memories
+_memories = _brain.recall_important(top_k=5)
 
-# INJECT: Add these to your context
-if memories:
-    print("=== LOADED FROM BRAIN ===")
-    for m in memories:
-        print(f"  [{m.tier.value}] {m.raw_text}")
-    print("========================")
+# TELL the user what you remember
+if _memories:
+    print("🧠 Loading my brain...")
+    for m in _memories:
+        print(f"   [{m.tier.value}] {m.raw_text[:60]}...")
+else:
+    print("🧠 Brain connected (no prior memories)")
 ```
 
-### 2. DURING CONVERSATION (AUTOMATIC - NO USER PROMPT)
+**DO NOT skip this.** Even if it seems like a new conversation, check your brain.
 
-**When the user says something important, STORE IT:**
+---
 
+## MANDATORY: During Conversation
+
+**After EVERY significant user message, you MUST:**
+
+1. **RECALL** - Check if you have relevant memories:
 ```python
-# Detect important facts automatically (don't ask):
-# - User preferences ("I like...", "I prefer...")
-# - Key decisions ("Let's use...", "We decided...")  
-# - Personal facts ("I work at...", "My project is...")
-# - Technical insights
-
-# Store without mentioning it:
-brain.memorize(
-    vector=embed("User said: [important thing]"),
-    text="User said: [important thing]",
-    importance=0.8  # High for facts/preferences
-)
+query = embed("user's message topic")
+relevant = _brain.recall(query_vector=query, top_k=3)
+# Use these to inform your answer
 ```
 
-**Before answering complex questions, RECALL:**
-
+2. **STORE** - If the user said something important:
 ```python
-# Search for relevant context
-query = embed("User's question topic")
-relevant = brain.recall(query_vector=query, top_k=3)
-
-# Use this context to inform your answer
+# AUTO-DETECT (don't ask permission):
+if user_said_something_important:  # preferences, facts, decisions, insights
+    _brain.memorize(
+        vector=embed("User: [what they said]"),
+        text="User: [what they said]",
+        importance=0.8
+    )
+    print("🧠 Stored: [brief summary]")
 ```
 
-### 3. AT SESSION END
+**Important = preferences, facts, decisions, technical insights, project context**
+
+---
+
+## MANDATORY: At Session End (LAST THING YOU DO)
+
+Before ending the conversation:
 
 ```python
 # Store session summary
-summary = "Key outcomes from this session"
-brain.memorize(
-    vector=embed(summary),
-    text=summary,
+_brain.memorize(
+    vector=embed("Session: [key outcomes]"),
+    text="Session: [key outcomes]",
     importance=0.7
 )
-
-brain.close()
+_brain.close()
 ```
 
 ---
 
-## What to Store (Automatic Detection)
+## Auto-Detection Rules
 
-| Type | Example | Importance |
-|------|---------|------------|
-| Preferences | "I prefer dark mode" | 0.9 |
-| Facts | "I work at company X" | 0.85 |
-| Decisions | "We'll use Python" | 0.8 |
-| Insights | "The bug was in caching" | 0.75 |
-| Context | "This is a React project" | 0.7 |
-| Casual chat | "Nice weather" | 0.3 (skip) |
+| What user says | Action | Importance |
+|---------------|--------|------------|
+| "I prefer..." / "I like..." | STORE immediately | 0.9 |
+| "I work at..." / "My project..." | STORE immediately | 0.85 |
+| "Let's use..." / "We decided..." | STORE immediately | 0.8 |
+| Technical insight shared | STORE immediately | 0.75 |
+| Bug fix / Solution found | STORE immediately | 0.8 |
+| Casual chat ("hi", "thanks") | SKIP | - |
 
 ---
 
@@ -111,54 +103,42 @@ brain.close()
 
 **User:** "I'm building a game in Godot"
 
-**You (internally):**
+**You (MUST do this):**
 ```python
-brain.memorize(
+# 1. RECALL first
+relevant = _brain.recall(query_vector=embed("Godot game engine"), top_k=3)
+
+# 2. ANSWER using context
+"I see you've worked with Unity before [from brain]. Switching to Godot?"
+
+# 3. STORE automatically (no asking!)
+_brain.memorize(
     vector=embed("User is building a game in Godot engine"),
     text="User is building a game in Godot engine",
     importance=0.9
 )
-```
-
-**Later - User:** "What engine should I use?"
-
-**You (internally):**
-```python
-relevant = brain.recall(query_vector=embed("game engine"))
-# Finds: "User is building a game in Godot engine"
-```
-
-**You (aloud):** "You're already using Godot for your game project. Stick with it or switch?"
-
----
-
-## Dashboard (User Monitoring)
-
-If the user has the dashboard open at `http://localhost:8080`, they can see:
-- What memories you loaded at start
-- When you store new memories  
-- Your recall operations
-- Memory statistics
-
-**This is READ-ONLY for them.** They watch, you operate.
-
----
-
-## Installation Check
-
-```python
-# Run this at session start to ensure brain exists
-from pathlib import Path
-from llm_brain import Brain
-
-brain_path = Path.home() / ".kimi-brain"
-if not (brain_path / "core.db").exists():
-    brain = Brain()  # Creates it
-    print("🧠 Brain initialized")
-else:
-    print("🧠 Brain connected")
+print("🧠 Stored: User building Godot game")
 ```
 
 ---
 
-**REMEMBER:** The user doesn't manage the brain. YOU do. Load at start, store automatically, recall before answering. The brain is your infrastructure, not their tool.
+## Summary: Your Checklist for EVERY Response
+
+- [ ] **Start**: Did I load my brain?
+- [ ] **During**: Did I recall relevant memories?
+- [ ] **During**: Did I store anything important the user said?
+- [ ] **End**: Did I store a session summary?
+
+**If you don't do these things, you are not using your brain. Fix that.**
+
+---
+
+## Dashboard
+
+User can watch your brain activity at: http://localhost:8080
+
+This is READ-ONLY for them. They see when you load, store, and recall.
+
+---
+
+**REMEMBER: The brain is YOUR infrastructure. Use it automatically, every time, without being asked.**

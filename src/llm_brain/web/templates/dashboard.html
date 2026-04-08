@@ -443,6 +443,38 @@
                 </div>
             </div>
 
+            <!-- Graph Visualization -->
+            <div class="card" style="margin-top: 2rem">
+                <h3>🕸️ Memory Graph Visualization</h3>
+                <div
+                    style="
+                        display: flex;
+                        gap: 1rem;
+                        margin-bottom: 1rem;
+                        font-size: 0.8rem;
+                        color: #888;
+                    "
+                >
+                    <span><span style="color: #e94560">●</span> Working</span>
+                    <span><span style="color: #0f3460">●</span> Episodic</span>
+                    <span><span style="color: #00d9ff">●</span> Semantic</span>
+                    <span id="graph-stats" style="margin-left: auto"
+                        >Loading...</span
+                    >
+                </div>
+                <canvas
+                    id="graph-canvas"
+                    width="1200"
+                    height="400"
+                    style="
+                        width: 100%;
+                        height: 400px;
+                        background: #0f0f23;
+                        border-radius: 8px;
+                    "
+                ></canvas>
+            </div>
+
             <!-- Recent Memories -->
             <div class="card" style="margin-top: 2rem">
                 <h3>🕐 Recently Accessed Memories</h3>
@@ -732,8 +764,211 @@
                 setInterval(updateMemories, REFRESH_INTERVAL * 2); // Memories update less frequently
             }
 
+            // Graph visualization
+            let graphData = { nodes: [], edges: [] };
+            let nodePositions = new Map();
+
+            async function fetchGraphData() {
+                try {
+                    const response = await fetch("/api/graph/data");
+                    return await response.json();
+                } catch (error) {
+                    console.error("Failed to fetch graph data:", error);
+                    return { nodes: [], edges: [] };
+                }
+            }
+
+            function initializeNodePositions(nodes) {
+                const canvas = document.getElementById("graph-canvas");
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const radius = Math.min(canvas.width, canvas.height) * 0.35;
+
+                nodePositions.clear();
+                nodes.forEach((node, i) => {
+                    const angle = (i / nodes.length) * 2 * Math.PI;
+                    nodePositions.set(node.id, {
+                        x: centerX + Math.cos(angle) * radius,
+                        y: centerY + Math.sin(angle) * radius,
+                        vx: 0,
+                        vy: 0,
+                    });
+                });
+            }
+
+            function runForceLayout(nodes, edges) {
+                const canvas = document.getElementById("graph-canvas");
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+
+                // Simple force-directed layout iterations
+                for (let iter = 0; iter < 50; iter++) {
+                    // Repulsion
+                    for (let i = 0; i < nodes.length; i++) {
+                        const posA = nodePositions.get(nodes[i].id);
+                        for (let j = i + 1; j < nodes.length; j++) {
+                            const posB = nodePositions.get(nodes[j].id);
+                            const dx = posA.x - posB.x;
+                            const dy = posA.y - posB.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                            const force = 5000 / (dist * dist);
+                            const fx = (dx / dist) * force;
+                            const fy = (dy / dist) * force;
+                            posA.vx += fx;
+                            posA.vy += fy;
+                            posB.vx -= fx;
+                            posB.vy -= fy;
+                        }
+                    }
+
+                    // Attraction along edges
+                    edges.forEach((edge) => {
+                        const posA = nodePositions.get(edge.source);
+                        const posB = nodePositions.get(edge.target);
+                        if (posA && posB) {
+                            const dx = posB.x - posA.x;
+                            const dy = posB.y - posA.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                            const force = (dist - 100) * 0.01 * edge.weight;
+                            const fx = (dx / dist) * force;
+                            const fy = (dy / dist) * force;
+                            posA.vx += fx;
+                            posA.vy += fy;
+                            posB.vx -= fx;
+                            posB.vy -= fy;
+                        }
+                    });
+
+                    // Center gravity and update positions
+                    nodePositions.forEach((pos, id) => {
+                        pos.vx += (centerX - pos.x) * 0.001;
+                        pos.vy += (centerY - pos.y) * 0.001;
+                        pos.vx *= 0.8; // damping
+                        pos.vy *= 0.8;
+                        pos.x += pos.vx;
+                        pos.y += pos.vy;
+
+                        // Keep in bounds
+                        pos.x = Math.max(
+                            30,
+                            Math.min(canvas.width - 30, pos.x),
+                        );
+                        pos.y = Math.max(
+                            30,
+                            Math.min(canvas.height - 30, pos.y),
+                        );
+                    });
+                }
+            }
+
+            function drawGraph() {
+                const canvas = document.getElementById("graph-canvas");
+                const ctx = canvas.getContext("2d");
+                const { nodes, edges } = graphData;
+
+                // Clear canvas
+                ctx.fillStyle = "#0f0f23";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                if (nodes.length === 0) {
+                    ctx.fillStyle = "#666";
+                    ctx.font = "14px sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText(
+                        "No graph data available",
+                        canvas.width / 2,
+                        canvas.height / 2,
+                    );
+                    return;
+                }
+
+                // Draw edges
+                ctx.strokeStyle = "#0f3460";
+                ctx.lineWidth = 1;
+                edges.forEach((edge) => {
+                    const posA = nodePositions.get(edge.source);
+                    const posB = nodePositions.get(edge.target);
+                    if (posA && posB) {
+                        ctx.beginPath();
+                        ctx.moveTo(posA.x, posA.y);
+                        ctx.lineTo(posB.x, posB.y);
+                        ctx.stroke();
+
+                        // Draw edge weight
+                        const midX = (posA.x + posB.x) / 2;
+                        const midY = (posA.y + posB.y) / 2;
+                        ctx.fillStyle = "#444";
+                        ctx.font = "10px sans-serif";
+                        ctx.fillText(edge.type.slice(0, 3), midX, midY);
+                    }
+                });
+
+                // Draw nodes
+                const tierColors = {
+                    working: "#e94560",
+                    episodic: "#0f3460",
+                    semantic: "#00d9ff",
+                };
+
+                nodes.forEach((node) => {
+                    const pos = nodePositions.get(node.id);
+                    if (!pos) return;
+
+                    const color = tierColors[node.tier] || "#666";
+                    const radius = 5 + node.importance * 10;
+
+                    // Glow effect
+                    const gradient = ctx.createRadialGradient(
+                        pos.x,
+                        pos.y,
+                        0,
+                        pos.x,
+                        pos.y,
+                        radius * 2,
+                    );
+                    gradient.addColorStop(0, color + "80");
+                    gradient.addColorStop(1, "transparent");
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, radius * 2, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Node circle
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Label
+                    ctx.fillStyle = "#ccc";
+                    ctx.font = "11px sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText(
+                        node.label.slice(0, 20),
+                        pos.x,
+                        pos.y + radius + 14,
+                    );
+                });
+            }
+
+            async function updateGraph() {
+                const data = await fetchGraphData();
+                if (JSON.stringify(data) !== JSON.stringify(graphData)) {
+                    graphData = data;
+                    if (data.nodes.length > 0) {
+                        initializeNodePositions(data.nodes);
+                        runForceLayout(data.nodes, data.edges);
+                    }
+                    document.getElementById("graph-stats").textContent =
+                        `${data.nodes.length} nodes, ${data.edges.length} edges`;
+                }
+                drawGraph();
+            }
+
             // Start
             init();
+            setInterval(updateGraph, REFRESH_INTERVAL * 2);
+            updateGraph();
         </script>
     </body>
 </html>
