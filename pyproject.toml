@@ -54,6 +54,9 @@ all = [
 Homepage = "https://github.com/saschametz/llm-brain"
 Repository = "https://github.com/saschametz/llm-brain"
 
+[project.scripts]
+llm-brain-chat = "llm_brain.hooks.cli_wrapper:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
